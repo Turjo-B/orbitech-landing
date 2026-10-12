@@ -3,11 +3,8 @@
    --------------------------------------------------------------------------
    A canvas-2D space flight that rolls into the hero. No dependencies.
 
-   Four phases over ~6.8s:
-     1. DRIFT   — slow parallax starfield, distant nebula
-     2. WARP    — acceleration; stars stretch into streaks
-     3. ARRIVE  — deceleration; a planet limb rises with atmospheric glow
-     4. SETTLE  — camera steadies, sequence cross-fades into the hero
+   A 3.3-second brand reveal, followed by a 650ms dissolve: orbital traces form around the supplied logo,
+   a soft nebula emerges, and the logo moves into its exact place in the hero.
 
    Guaranteed fallbacks — the animation NEVER runs when:
      · prefers-reduced-motion: reduce is set
@@ -16,7 +13,7 @@
      · it has already played this browser session
      · JavaScript is unavailable (the overlay ships with `hidden`)
 
-   The static hero backdrop (.hero__backdrop / .hero__stars / .hero__planet)
+   The static hero backdrop (.hero__backdrop / .hero__stars / .space-nebula)
    is pure CSS and is ALWAYS present underneath — it is the poster state, so
    every fallback path lands on a complete, designed hero rather than a gap.
    ========================================================================== */
@@ -103,13 +100,14 @@
     this.skipBtn = root.querySelector(".intro__skip");
     this.progressEl = root.querySelector(".intro__progress");
     this.captionEl = root.querySelector(".intro__caption");
+    this.identityEl = root.querySelector(".intro__identity");
 
-    this.DURATION = 6800;   // total run time in ms
+    this.DURATION = 3300;
     this.PHASES = [
-      { at: 0,    caption: "Somewhere quiet, far out" },
-      { at: 1600, caption: "Accelerating" },
-      { at: 3600, caption: "Entering orbit" },
-      { at: 5600, caption: "" }
+      { at: 0,    caption: "Human expertise. Intelligent systems." },
+      { at: this.DURATION * 1700 / 5200, caption: "Intelligent data. Innovative software." },
+      { at: this.DURATION * 3200 / 5200, caption: "Limitless possibilities." },
+      { at: this.DURATION * 4200 / 5200, caption: "" }
     ];
 
     this.elapsed = 0;
@@ -126,6 +124,8 @@
     this.onVisibility = this.handleVisibility.bind(this);
     this.onKeydown = this.handleKeydown.bind(this);
     this.tick = this.tick.bind(this);
+    this.onSkip = this.requestSkip.bind(this);
+    this.onMotionChange = this.handleMotionChange.bind(this);
   }
 
   IntroSequence.prototype.start = function () {
@@ -134,13 +134,18 @@
     this.resize();
     this.seedStars();
     this.seedNebulae();
+    this.cacheNebulae();
 
     document.body.classList.add("is-intro-locked");
 
     window.addEventListener("resize", this.onResize, { passive: true });
     document.addEventListener("visibilitychange", this.onVisibility);
     document.addEventListener("keydown", this.onKeydown);
-    this.skipBtn.addEventListener("click", this.dismiss.bind(this, true));
+    this.skipBtn.addEventListener("click", this.onSkip);
+    this.motionQuery = window.matchMedia("(prefers-reduced-motion: reduce)");
+    if (this.motionQuery.addEventListener) this.motionQuery.addEventListener("change", this.onMotionChange);
+    this.main = document.getElementById("main");
+    if (this.main) this.main.inert = true;
 
     // Move focus to the skip control so keyboard users can escape at once.
     try { this.skipBtn.focus({ preventScroll: true }); } catch (e) { this.skipBtn.focus(); }
@@ -162,6 +167,18 @@
     this.cy = this.h / 2;
     // Focal length scaled to viewport so framing is consistent at any size.
     this.focal = Math.max(this.w, this.h) * 0.9;
+    this.measureLogoTarget();
+    if (this.nebulae.length) this.cacheNebulae();
+  };
+
+  IntroSequence.prototype.measureLogoTarget = function () {
+    var heroLogo = document.querySelector(".hero__logo");
+    this.logoTarget = null;
+    if (heroLogo) {
+      var rect = heroLogo.getBoundingClientRect();
+      this.logoTarget = { left: rect.left, top: rect.top,
+        width: rect.width, height: rect.height };
+    }
   };
 
   /* --- Scene construction ----------------------------------------------- */
@@ -169,7 +186,7 @@
   IntroSequence.prototype.seedStars = function () {
     // Density scaled to area, clamped so huge monitors don't tank the frame rate.
     var count = Math.round(
-      Math.min(1100, Math.max(420, (this.w * this.h) / 1700))
+      Math.min(680, Math.max(260, (this.w * this.h) / 2600))
     );
     this.stars = new Array(count);
 
@@ -194,42 +211,115 @@
 
   IntroSequence.prototype.seedNebulae = function () {
     // Soft coloured clouds. Positions are viewport-relative fractions.
+    /* Positions and alphas mirror the gradients on `.hero__backdrop`, so the
+       colour field the sequence ends on is the one the static hero already
+       has. Keep these in step if you restyle the hero backdrop. */
     this.nebulae = [
-      { fx: 0.20, fy: 0.30, r: 0.62, col: [79, 216, 232],  a: 0.16, drift: -0.4 },
-      { fx: 0.78, fy: 0.24, r: 0.52, col: [139, 124, 255], a: 0.18, drift: 0.5 },
-      { fx: 0.55, fy: 0.74, r: 0.70, col: [59, 130, 190],  a: 0.11, drift: 0.25 },
-      { fx: 0.08, fy: 0.80, r: 0.40, col: [139, 124, 255], a: 0.10, drift: -0.3 }
+      { fx: 0.12, fy: 0.08, r: 0.58, col: [139, 124, 255], a: 0.16, drift: -0.4 },
+      { fx: 0.88, fy: 0.22, r: 0.52, col: [79, 216, 232],  a: 0.11, drift: 0.5 },
+      { fx: 0.50, fy: 1.08, r: 0.84, col: [79, 216, 232],  a: 0.21, drift: 0.2 },
+      { fx: 0.26, fy: 0.60, r: 0.44, col: [139, 124, 255], a: 0.09, drift: -0.3 }
     ];
+  };
+
+  IntroSequence.prototype.cacheNebulae = function () {
+    var canvas = document.createElement("canvas");
+    // A soft field needs no retina-resolution buffer.
+    canvas.width = Math.max(1, Math.round(this.w * 0.5));
+    canvas.height = Math.max(1, Math.round(this.h * 0.5));
+    var ctx = canvas.getContext("2d");
+    if (!ctx) return;
+    ctx.scale(0.5, 0.5);
+    ctx.globalCompositeOperation = "lighter";
+    for (var i = 0; i < this.nebulae.length; i++) {
+      var neb = this.nebulae[i];
+      var x = neb.fx * this.w, y = neb.fy * this.h;
+      var radius = neb.r * Math.max(this.w, this.h);
+      var c = neb.col.join(",");
+      var gradient = ctx.createRadialGradient(x, y, 0, x, y, radius);
+      gradient.addColorStop(0, "rgba(" + c + "," + neb.a + ")");
+      gradient.addColorStop(0.45, "rgba(" + c + "," + neb.a * 0.32 + ")");
+      gradient.addColorStop(1, "rgba(" + c + ",0)");
+      ctx.fillStyle = gradient;
+      ctx.fillRect(0, 0, this.w, this.h);
+    }
+    this.nebulaCanvas = canvas;
+  };
+
+  IntroSequence.prototype.drawOrbits = function (ms) {
+    var enter = easeOutCubic(clamp(ms / 1300, 0, 1));
+    var leave = 1 - easeInOutCubic(clamp((ms - 3000) / 1300, 0, 1));
+    if (leave <= 0) return;
+    var ctx = this.ctx;
+    var radius = Math.min(this.w * 0.28, this.h * 0.36, 340);
+    ctx.save();
+    ctx.translate(this.cx, this.h * 0.48);
+    ctx.globalAlpha = enter * leave;
+    var gradient = ctx.createLinearGradient(-radius, -radius, radius, radius);
+    gradient.addColorStop(0, "#7561ff");
+    gradient.addColorStop(0.5, "#348aff");
+    gradient.addColorStop(1, "#17c7de");
+    for (var ring = 0; ring < 3; ring++) {
+      ctx.save();
+      ctx.rotate(-0.45 + ring * 0.65 + ms * 0.000025);
+      var r = radius * (1 + ring * 0.16);
+      ctx.strokeStyle = "rgba(130,170,235,0.12)";
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.ellipse(0, 0, r, r * 0.47, 0, 0, Math.PI * 2);
+      ctx.stroke();
+      var angle = ms * 0.00075 * (ring % 2 ? -1 : 1) + ring * 2.1;
+      ctx.strokeStyle = gradient;
+      ctx.lineWidth = 1.6;
+      ctx.beginPath();
+      ctx.ellipse(0, 0, r, r * 0.47, 0, angle - enter * 1.8, angle);
+      ctx.stroke();
+      var x = Math.cos(angle) * r, y = Math.sin(angle) * r * 0.47;
+      var glow = ctx.createRadialGradient(x, y, 0, x, y, 18);
+      glow.addColorStop(0, "rgba(79,216,232,0.55)");
+      glow.addColorStop(1, "rgba(79,216,232,0)");
+      ctx.fillStyle = glow;
+      ctx.fillRect(x - 18, y - 18, 36, 36);
+      ctx.fillStyle = ring === 0 ? "#b5a5ff" : "#a3f1ff";
+      ctx.beginPath();
+      ctx.arc(x, y, 2.6, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
+    }
+    ctx.restore();
+  };
+
+  IntroSequence.prototype.positionIdentity = function (ms) {
+    if (!this.identityEl) return;
+    ms = ms * 5200 / this.DURATION;
+    // Font loading or a resized viewport can change the hero's geometry.
+    // Measure the actual resting logo, rather than landing on a stale box.
+    this.measureLogoTarget();
+    var t = easeInOutCubic(clamp((ms - 3300) / 1500, 0, 1));
+    var initialWidth = Math.min(560, Math.max(320, this.w * 0.38));
+    var target = this.logoTarget;
+    var x = this.cx, y = this.h * 0.48, width = initialWidth;
+    if (target) {
+      x += (target.left + target.width / 2 - x) * t;
+      y += (target.top + target.height / 2 - y) * t;
+      width += (target.width - width) * t;
+    }
+    // Layout stays fixed; transforms handle all movement and scaling.
+    this.identityEl.style.left = this.cx + "px";
+    this.identityEl.style.top = this.h * 0.48 + "px";
+    this.identityEl.style.width = initialWidth + "px";
+    this.identityEl.style.opacity = easeOutCubic(clamp((ms - 500) / 1100, 0, 1));
+    this.identityEl.style.transform = "translate(-50%, -50%) translate(" +
+      (x - this.cx).toFixed(2) + "px," + (y - this.h * 0.48).toFixed(2) +
+      "px) scale(" + (width / initialWidth).toFixed(4) + ")";
   };
 
   /* --- Motion curves ----------------------------------------------------- */
 
   // Speed of travel through the field, as a function of elapsed ms.
   IntroSequence.prototype.speedAt = function (ms) {
-    var d = this.DURATION;
-    if (ms < 1600) {
-      // Drift: barely moving, easing up at the very end.
-      return 0.10 + easeInQuad(ms / 1600) * 0.25;
-    }
-    if (ms < 3600) {
-      // Warp: hard acceleration, then hold near peak.
-      var t = (ms - 1600) / 2000;
-      return 0.35 + easeOutCubic(Math.min(t * 1.35, 1)) * 5.4;
-    }
-    if (ms < 5600) {
-      // Arrive: decelerate sharply as the planet comes into frame.
-      var t2 = (ms - 3600) / 2000;
-      return 5.75 * (1 - easeInOutCubic(t2)) + 0.18;
-    }
-    // Settle: near-stationary drift.
-    var t3 = (ms - 5600) / (d - 5600);
-    return 0.18 * (1 - t3 * 0.5);
-  };
-
-  // How far the planet has risen, 0 (off-screen) → 1 (final framing).
-  IntroSequence.prototype.planetProgress = function (ms) {
-    if (ms < 3300) return 0;
-    return easeOutCubic(clamp((ms - 3300) / 2600, 0, 1));
+    ms = ms * 5200 / this.DURATION;
+    return 0.07 + 0.85 * bell(ms, 2450, 850);
   };
 
   /* --- Frame loop --------------------------------------------------------- */
@@ -257,6 +347,8 @@
   };
 
   IntroSequence.prototype.draw = function (ms, dt) {
+    // Keep all scene beats proportional when the total duration changes.
+    var sceneMs = ms * 5200 / this.DURATION;
     var ctx = this.ctx;
     var w = this.w, h = this.h;
 
@@ -264,29 +356,8 @@
     ctx.fillStyle = "#03050b";
     ctx.fillRect(0, 0, w, h);
 
-    // --- Nebulae ----------------------------------------------------------
-    // Brighten through the warp, then recede as the planet takes over.
-    var nebGain = 0.55 + 0.75 * bell(ms / this.DURATION, 0.44, 0.30);
-    var maxDim = Math.max(w, h);
-
-    ctx.globalCompositeOperation = "lighter";
-    for (var n = 0; n < this.nebulae.length; n++) {
-      var neb = this.nebulae[n];
-      var nx = neb.fx * w + Math.sin(this.travel * 0.12 + n) * neb.drift * 26;
-      var ny = neb.fy * h + Math.cos(this.travel * 0.09 + n) * neb.drift * 18;
-      var nr = neb.r * maxDim * (0.85 + this.travel * 0.012);
-
-      var g = ctx.createRadialGradient(nx, ny, 0, nx, ny, nr);
-      var c = neb.col;
-      g.addColorStop(0, "rgba(" + c[0] + "," + c[1] + "," + c[2] + "," +
-                        (neb.a * nebGain).toFixed(3) + ")");
-      g.addColorStop(0.45, "rgba(" + c[0] + "," + c[1] + "," + c[2] + "," +
-                        (neb.a * nebGain * 0.32).toFixed(3) + ")");
-      g.addColorStop(1, "rgba(" + c[0] + "," + c[1] + "," + c[2] + ",0)");
-      ctx.fillStyle = g;
-      ctx.fillRect(nx - nr, ny - nr, nr * 2, nr * 2);
-    }
-    ctx.globalCompositeOperation = "source-over";
+    // Cache the large gradients once, rather than rasterising them every frame.
+    if (this.nebulaCanvas) ctx.drawImage(this.nebulaCanvas, 0, 0, w, h);
 
     // --- Star field --------------------------------------------------------
     var speed = this.speedAt(ms);
@@ -342,13 +413,15 @@
       s.py = sy;
     }
 
-    // --- Planet ----------------------------------------------------------
-    var pp = this.planetProgress(ms);
-    if (pp > 0) this.drawPlanet(pp);
+    // The shared CSS haze resolves to precisely the hero's cloud layer.
+    this.root.style.setProperty("--nebula-opacity",
+      easeOutCubic(clamp((sceneMs - 2400) / 2300, 0, 1)).toFixed(4));
+    this.drawOrbits(sceneMs);
+    this.positionIdentity(ms);
 
     // --- Warp bloom -------------------------------------------------------
     // A brief centred flare at peak speed sells the acceleration.
-    var bloom = bell(ms, 3050, 700) * 0.5;
+    var bloom = bell(sceneMs, 2500, 650) * 0.12;
     if (bloom > 0.01) {
       var bg = ctx.createRadialGradient(
         this.cx, this.cy, 0, this.cx, this.cy, Math.max(w, h) * 0.55);
@@ -361,92 +434,16 @@
       ctx.globalCompositeOperation = "source-over";
     }
 
-    // --- Final cross-fade towards the hero's own gradient -----------------
-    if (ms > this.DURATION - 900) {
-      var fade = clamp((ms - (this.DURATION - 900)) / 900, 0, 1) * 0.55;
-      ctx.fillStyle = "rgba(4,6,13," + fade.toFixed(3) + ")";
-      ctx.fillRect(0, 0, w, h);
-    }
-  };
-
-  IntroSequence.prototype.drawPlanet = function (p) {
-    var ctx = this.ctx;
-    var w = this.w, h = this.h;
-
-    // The planet is far larger than the viewport — we only ever see its limb.
-    var radius = Math.max(w, h) * 1.55;
-    // Rises from fully off-screen to a limb sitting low in frame.
-    var restY = h + radius * 0.86;
-    var startY = h + radius * 1.30;
-    var cyP = startY + (restY - startY) * p;
-    var cxP = w * 0.5;
-
-    // Atmospheric halo above the limb.
-    ctx.globalCompositeOperation = "lighter";
-    var halo = ctx.createRadialGradient(cxP, cyP, radius * 0.965, cxP, cyP, radius * 1.12);
-    halo.addColorStop(0, "rgba(120,225,245," + (0.42 * p).toFixed(3) + ")");
-    halo.addColorStop(0.35, "rgba(79,180,232," + (0.16 * p).toFixed(3) + ")");
-    halo.addColorStop(1, "rgba(79,140,232,0)");
-    ctx.fillStyle = halo;
-    ctx.beginPath();
-    ctx.arc(cxP, cyP, radius * 1.12, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.globalCompositeOperation = "source-over";
-
-    // Planet body.
-    ctx.save();
-    ctx.beginPath();
-    ctx.arc(cxP, cyP, radius, 0, Math.PI * 2);
-    ctx.clip();
-
-    var body = ctx.createLinearGradient(0, cyP - radius, 0, cyP - radius * 0.35);
-    body.addColorStop(0, "rgba(24,74,104," + (0.98 * p).toFixed(3) + ")");
-    body.addColorStop(0.25, "rgba(13,42,68," + (0.98 * p).toFixed(3) + ")");
-    body.addColorStop(1, "rgba(4,8,18," + (0.99 * p).toFixed(3) + ")");
-    ctx.fillStyle = body;
-    ctx.fillRect(cxP - radius, cyP - radius, radius * 2, radius * 2);
-
-    // Terminator — light falling off towards the right-hand side.
-    var term = ctx.createLinearGradient(cxP - radius * 0.6, 0, cxP + radius * 0.75, 0);
-    term.addColorStop(0, "rgba(0,0,0,0)");
-    term.addColorStop(0.55, "rgba(2,4,10,0.30)");
-    term.addColorStop(1, "rgba(2,4,10,0.72)");
-    ctx.fillStyle = term;
-    ctx.fillRect(cxP - radius, cyP - radius, radius * 2, radius * 2);
-
-    // Faint surface banding so the limb isn't a flat shape.
-    ctx.globalAlpha = 0.16 * p;
-    for (var b = 0; b < 5; b++) {
-      var by = cyP - radius * (0.99 - b * 0.035);
-      var bh = radius * 0.016;
-      var bandGrad = ctx.createLinearGradient(cxP - radius, by, cxP + radius, by);
-      bandGrad.addColorStop(0, "rgba(90,170,210,0)");
-      bandGrad.addColorStop(0.4, "rgba(120,200,235,0.5)");
-      bandGrad.addColorStop(0.7, "rgba(90,150,200,0.18)");
-      bandGrad.addColorStop(1, "rgba(90,150,200,0)");
-      ctx.fillStyle = bandGrad;
-      ctx.fillRect(cxP - radius, by, radius * 2, bh);
-    }
-    ctx.globalAlpha = 1;
-    ctx.restore();
-
-    // Bright rim on the lit edge of the limb.
-    ctx.save();
-    ctx.beginPath();
-    ctx.arc(cxP, cyP, radius, Math.PI * 1.06, Math.PI * 1.94);
-    ctx.strokeStyle = "rgba(168,242,255," + (0.85 * p).toFixed(3) + ")";
-    ctx.lineWidth = Math.max(1.2, radius * 0.0016);
-    ctx.shadowColor = "rgba(120,225,245,0.9)";
-    ctx.shadowBlur = 26 * p;
-    ctx.stroke();
-    ctx.restore();
+    /* Deliberately NO fade-to-black at the end. The overlay's own opacity
+       transition does the dissolve, and the hero backdrop underneath is built
+       to match this frame — darkening the canvas first would break that. */
   };
 
   /* --- Skip control, captions, progress ---------------------------------- */
 
   IntroSequence.prototype.updateChrome = function (ms) {
     var pct = clamp(ms / this.DURATION, 0, 1) * 100;
-    this.progressEl.style.width = pct.toFixed(2) + "%";
+    this.progressEl.style.transform = "scaleX(" + (pct / 100).toFixed(4) + ")";
 
     // Advance the caption when we cross into a new phase.
     var phase = 0;
@@ -466,12 +463,19 @@
   };
 
   IntroSequence.prototype.handleKeydown = function (e) {
-    // Escape, Enter and Space all skip — Enter/Space only when the skip
-    // button itself isn't focused, so we don't double-fire its click.
     if (e.key === "Escape") {
       e.preventDefault();
-      this.dismiss(true);
+      this.requestSkip();
     }
+  };
+
+  // Skip never forces a visitor to watch a fast-forwarded animation.
+  IntroSequence.prototype.requestSkip = function () {
+    this.dismiss(true);
+  };
+
+  IntroSequence.prototype.handleMotionChange = function (event) {
+    if (event.matches) this.dismiss(true);
   };
 
   IntroSequence.prototype.handleVisibility = function () {
@@ -498,14 +502,27 @@
     document.removeEventListener("visibilitychange", this.onVisibility);
     document.removeEventListener("keydown", this.onKeydown);
 
+    this.skipBtn.removeEventListener("click", this.onSkip);
+    if (this.motionQuery && this.motionQuery.removeEventListener) {
+      this.motionQuery.removeEventListener("change", this.onMotionChange);
+    }
+    if (this.main) this.main.inert = false;
+    // The canvas logo now overlaps the hero logo: reveal it without a second
+    // entrance animation so the identity never flashes out and back in.
+    var heroLogo = document.querySelector(".hero__logo");
+    if (heroLogo) heroLogo.classList.add("is-landed");
+    document.body.classList.remove("is-intro-locked");
+    // Align the two identities after scroll unlock, before either is exposed.
+    // The hero now fades in at its resting position; no second movement.
+    if (!skipped) this.positionIdentity(this.DURATION);
+    revealHero();
     this.root.classList.add("is-dismissed");
     this.root.setAttribute("aria-hidden", "true");
-    document.body.classList.remove("is-intro-locked");
 
     // Send focus somewhere sensible so keyboard users aren't stranded on a
     // control that no longer exists.
     var target = document.getElementById("hero-title");
-    if (target) {
+    if (target && this.root.contains(document.activeElement)) {
       target.setAttribute("tabindex", "-1");
       try { target.focus({ preventScroll: true }); } catch (e) { target.focus(); }
     }
@@ -521,6 +538,7 @@
       if (self.root.parentNode) self.root.parentNode.removeChild(self.root);
       self.stars = null;
       self.nebulae = null;
+      self.nebulaCanvas = null;
     }, 1000);
   };
 
@@ -528,6 +546,16 @@
   /* ======================================================================
      Helpers
      ====================================================================== */
+
+  /**
+   * Releases the hero copy. Harmless to call on paths where the copy was
+   * never hidden — `intro-pending` is the only thing that hides it, and the
+   * entrance rules are inert without it.
+   */
+  function revealHero() {
+    document.documentElement.classList.add("hero-in");
+  }
+
   function clamp(v, lo, hi) { return v < lo ? lo : (v > hi ? hi : v); }
   function easeInQuad(t) { return t * t; }
   function easeOutCubic(t) { return 1 - Math.pow(1 - t, 3); }
@@ -550,8 +578,9 @@
 
     // The inline bootstrap in index.html already decided whether to show the
     // overlay. If it's still hidden, this visit takes the poster path.
-    if (root.hasAttribute("hidden")) {
+    if (root.hasAttribute("hidden") || !shouldPlayIntro()) {
       document.body.classList.remove("is-intro-locked");
+      revealHero();
       document.dispatchEvent(new CustomEvent("orbitech:introdone", {
         detail: { skipped: true, reason: "fallback" }
       }));
@@ -559,7 +588,19 @@
       return;
     }
 
-    new IntroSequence(root).start();
+    var sequence;
+    try {
+      sequence = new IntroSequence(root);
+      sequence.start();
+    } catch (error) {
+      if (sequence) sequence.dismiss(true);
+      else {
+        document.body.classList.remove("is-intro-locked");
+        revealHero();
+        root.remove();
+      }
+      console.error("[Orbitech] Intro unavailable; showing the page.", error);
+    }
   }
 
   if (document.readyState === "loading") {

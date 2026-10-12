@@ -34,10 +34,9 @@
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Crect width='24' height='24' rx='5' fill='%2304060d'/%3E%3Cg fill='none' stroke='%234fd8e8' stroke-width='1.6'%3E%3Ccircle cx='12' cy='12' r='3.6'/%3E%3Cellipse cx='12' cy='12' rx='9' ry='4.2' transform='rotate(-28 12 12)'/%3E%3C/g%3E%3Ccircle cx='19.2' cy='8.6' r='1.5' fill='%238b7cff'/%3E%3C/svg%3E">
 <link rel="apple-touch-icon" href="assets/img/apple-touch-icon.png">
 
-<!-- Fonts: preconnected and swap-loaded so text paints immediately -->
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap">
+<!-- Load both local font families before first paint, without remote CSS. -->
+<link rel="preload" href="assets/fonts/inter-latin.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="assets/fonts/space-grotesk-latin.woff2" as="font" type="font/woff2" crossorigin>
 
 <link rel="stylesheet" href="assets/css/orbitech.css">
 
@@ -85,7 +84,11 @@
      ========================================================================== -->
 <div class="intro" id="intro" role="dialog" aria-label="Introduction animation" hidden>
   <canvas class="intro__canvas" id="intro-canvas" aria-hidden="true"></canvas>
+  <div class="space-nebula" aria-hidden="true"></div>
   <div class="intro__vignette" aria-hidden="true"></div>
+  <div class="intro__identity" aria-hidden="true">
+    <img src="assets/img/orbitech-logo.png" alt="" width="1697" height="438">
+  </div>
   <p class="intro__caption" id="intro-caption" aria-hidden="true"></p>
   <button type="button" class="intro__skip" id="intro-skip">
     Skip intro
@@ -118,6 +121,20 @@
       if (!reduced && !small && !coarse && !saveData && !slowNet && !played) {
         el.removeAttribute('hidden');
         document.body.classList.add('is-intro-locked');
+        /* Holds the hero copy back so it can rise in after the intro
+           dissolves, rather than being revealed all at once underneath it. */
+        document.documentElement.classList.add('intro-pending');
+
+        /* Failsafe: if intro.js never loads or throws, the hero must not stay
+           invisible. Well clear of the sequence plus its fade. */
+        setTimeout(function () {
+          var r = document.documentElement;
+          if (!r.classList.contains('hero-in')) {
+            r.classList.add('hero-in');
+            document.body.classList.remove('is-intro-locked');
+            if (el.parentNode) el.parentNode.removeChild(el);
+          }
+        }, 11000);
       }
     } catch (e) { /* any failure → poster path, which is always safe */ }
   })();
@@ -125,18 +142,12 @@
 
 
 <!-- ==========================================================================
-     STICKY HEADER — hidden until the hero is scrolled past
+     STICKY HEADER — revealed after the hero scrolls out of view
      ========================================================================== -->
 <header class="header" id="site-header">
   <div class="header__inner">
     <a class="logo" href="#hero" aria-label="Orbitech — back to top">
-      <svg class="logo__mark" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-           stroke-width="1.6" aria-hidden="true">
-        <circle cx="12" cy="12" r="3.6"/>
-        <ellipse cx="12" cy="12" rx="10" ry="4.6" transform="rotate(-28 12 12)"/>
-        <circle cx="20.4" cy="8.2" r="1.6" fill="currentColor" stroke="none"/>
-      </svg>
-      <span class="logo__text">Orbitech</span>
+      <img class="logo__image" src="assets/img/orbitech-logo.png" alt="Orbitech" width="1697" height="438">
     </a>
 
     <nav class="nav" aria-label="Primary">
@@ -168,29 +179,27 @@
 <!-- ==========================================================================
      1. HERO
      🔴 PLACEHOLDER — tagline and sub-line copy live directly below.
-     The backdrop, stars and planet limb are pure CSS: they are the static
+     The backdrop, stars and nebula haze are pure CSS: they are the static
      poster state used on mobile, on reduced-motion, and after the intro ends.
      ========================================================================== -->
 <section class="hero" id="hero" aria-labelledby="hero-title">
   <div class="hero__backdrop" aria-hidden="true"></div>
   <div class="hero__stars" aria-hidden="true"></div>
-  <div class="hero__planet" aria-hidden="true"></div>
+  <canvas class="hero__sky" aria-hidden="true"></canvas>
+  <div class="space-nebula" aria-hidden="true"></div>
 
   <div class="hero__inner">
-    <p class="eyebrow hero__badge">Explore the orbit with us</p>
+    <img class="hero__logo" src="assets/img/orbitech-logo.png" alt="Orbitech" width="1697" height="438" fetchpriority="high">
 
-    <!-- 🔴 PLACEHOLDER TAGLINE — replace this line, keep the markup -->
     <h1 class="hero__title" id="hero-title">
-      Reach the <span class="text-gradient">Orbit</span>
+      Intelligent Data. Innovative Software.<br>
+      <span class="text-gradient">Limitless Possibilities.</span>
     </h1>
 
     <!-- Plain-language one-liner. Deliberately literal, not metaphorical:
          a skimming visitor must understand both pillars in one read. -->
     <p class="hero__sub">
-      We handle the two hardest parts of building an AI product: the multilingual
-      data behind it, and the software around it. Annotation, transcription,
-      translation and MTPE across 100+ languages — plus an in-house engineering
-      team that builds the product itself.
+      At Orbitech, we believe every great innovation begins with the right foundation. By combining human expertise, intelligent data solutions, and cutting-edge software and web development, we help businesses transform ideas into impact. From powering smarter AI to building seamless digital experiences, we turn complex challenges into meaningful possibilities, shaping a future driven by technology, precision, and innovation.
     </p>
 
     <div class="hero__actions">
@@ -215,8 +224,8 @@
 
 <!-- ==========================================================================
      2. DATA SOLUTIONS
-     🔴 PLACEHOLDER — heading + lede copy below. All stats, service cards,
-     languages and case studies come from content.config.js'
+     Company copy supplied in Untitled document.pdf. Stats, service cards,
+     languages and case studies come from content.config.js
      ========================================================================== -->
 <section class="section section--tinted" id="solutions" aria-labelledby="data-title">
   <div class="container">
@@ -225,13 +234,11 @@
       <div>
         <p class="eyebrow eyebrow--numbered"><span class="eyebrow__badge">01</span>Data Solutions</p>
         <h2 class="pillar-head__title" id="data-title">
-          The groundwork every model stands on
+          High Quality Data for Smarter AI
         </h2>
       </div>
       <p class="lede pillar-head__lede">
-        Training data is only as good as the people producing it. We run a vetted,
-        globally distributed specialist network — with the review layer, quality
-        scoring and confidentiality controls that make its output safe to build on.
+        Behind every intelligent system is a foundation of data. We help businesses transform raw information into structured, meaningful, and dependable datasets designed to train, evaluate, and improve AI and machine learning systems. From a single specialized task to large scale multilingual projects, our teams bring together human expertise, carefully designed workflows, and rigorous quality control to deliver data that machines can learn from with confidence.
       </p>
     </div>
 
@@ -251,7 +258,7 @@
       <div class="subhead">
         <h3 class="subhead__title">Languages we cover</h3>
         <span class="subhead__rule" aria-hidden="true"></span>
-        <span class="subhead__note">100+ and counting</span>
+        <span class="subhead__note">100+ Languages and Growing</span>
       </div>
       <div class="lang-panel">
         <div class="lang-panel__aside" id="lang-aside"><!-- rendered from config --></div>
@@ -263,7 +270,7 @@
       <div class="subhead">
         <h3 class="subhead__title">Featured work</h3>
         <span class="subhead__rule" aria-hidden="true"></span>
-        <span class="subhead__note">Some clients named, some under NDA</span>
+        <span class="subhead__note">Multilingual data projects</span>
       </div>
       <div class="grid grid--2" id="data-work"><!-- rendered from config --></div>
     </div>
@@ -274,7 +281,7 @@
 
 <!-- ==========================================================================
      3. SOFTWARE DEVELOPMENT
-     🔴 PLACEHOLDER — heading + lede copy below.
+     Company capabilities supplied in Orbitech_Portfolio_v3.pdf.
      ========================================================================== -->
 <section class="section" id="software" aria-labelledby="software-title">
   <div class="container">
@@ -283,17 +290,15 @@
       <div>
         <p class="eyebrow eyebrow--numbered"><span class="eyebrow__badge">02</span>Software Development</p>
         <h2 class="pillar-head__title" id="software-title">
-          Engineers who ship, not just advise
+          From discovery to deployment
         </h2>
       </div>
       <p class="lede pillar-head__lede">
-        A salaried in-house team taking on client product work and internal tooling
-        alike — web and mobile applications, AI/ML systems, and the unglamorous
-        pipeline and platform work that keeps them running.
+        Orbitech Web Solutions is a team of 10 software engineers building full-stack products end to end, across frontend and backend development, mobile apps, machine learning, and DevOps. We've shipped 15+ products spanning web platforms, mobile apps, AI-integrated tools, and backend systems.
       </p>
     </div>
 
-    <div class="grid grid--4" id="software-stats"><!-- rendered from config --></div>
+    <div class="grid grid--3" id="software-stats"><!-- rendered from config --></div>
 
     <div class="subsection">
       <div class="subhead">
@@ -303,20 +308,45 @@
       <div class="grid grid--3" id="software-services"><!-- rendered from config --></div>
     </div>
 
+    <section class="subsection toolkit" aria-labelledby="toolkit-title">
+      <div class="toolkit__header">
+        <div>
+          <p class="eyebrow">Our engineering toolkit</p>
+          <h3 class="toolkit__title" id="toolkit-title">Frameworks we work with<span aria-hidden="true">.</span></h3>
+          <p class="toolkit__intro">The tools behind our shipped products, from the first interface to the infrastructure underneath.</p>
+        </div>
+        <div class="toolkit__inventory">
+          <span class="toolkit__count" id="stack-count"></span>
+          <span>technologies across<br>four disciplines</span>
+        </div>
+      </div>
+      <div class="toolkit__filters" id="stack-filters" role="group" aria-label="Filter technologies by discipline"></div>
+      <div class="stack-grid" id="tech-stack"><!-- rendered from config --></div>
+      <p class="toolkit__footer">Different products need different foundations. We choose the stack around your requirements.</p>
+    </section>
+
     <div class="subsection">
       <div class="subhead">
-        <h3 class="subhead__title">Tools of the trade</h3>
+        <h3 class="subhead__title">Team &amp; approach</h3>
         <span class="subhead__rule" aria-hidden="true"></span>
-        <span class="subhead__note">Chosen per project, not per fashion</span>
       </div>
-      <div class="stack-grid" id="tech-stack"><!-- rendered from config --></div>
+      <div class="grid grid--2">
+        <article class="card why-card" data-reveal>
+          <h4 class="why-card__title">Our team</h4>
+          <p class="text-muted" style="margin-top:var(--s-3)">Our ten engineers bring backgrounds in computer science and engineering, with additional experience in applied machine learning, competitive programming, and DevOps. Overlapping skill sets allow most projects to be staffed entirely in house, spanning frontend, backend, mobile, and infrastructure work.</p>
+        </article>
+        <article class="card why-card" data-reveal>
+          <h4 class="why-card__title">How we work</h4>
+          <p class="text-muted" style="margin-top:var(--s-3)">Projects are staffed with two to three engineers, with one person accountable from planning through launch. Requirements are validated with real stakeholders before design starts. Every build ships with basic monitoring and documentation so it can be maintained or handed off.</p>
+        </article>
+      </div>
     </div>
 
     <div class="subsection" data-spy-work>
       <div class="subhead">
         <h3 class="subhead__title">Featured work</h3>
         <span class="subhead__rule" aria-hidden="true"></span>
-        <span class="subhead__note">Some clients named, some under NDA</span>
+        <span class="subhead__note">Selected software projects</span>
       </div>
       <div class="grid grid--2" id="software-work"><!-- rendered from config --></div>
     </div>
@@ -326,26 +356,22 @@
 
 
 <!-- ==========================================================================
-     4. WHY ORBITECH — the combined-capability differentiator
-     🔴 PLACEHOLDER — heading + lede below; comparison and points in config.
+     4. WHY ORBITECH — human expertise and delivery
+     Company copy supplied in Untitled document.pdf; points in config.
      ========================================================================== -->
 <section class="section section--tinted why" id="why" aria-labelledby="why-title">
   <div class="container why__inner">
 
     <div class="section-head">
       <p class="eyebrow">Why Orbitech</p>
-      <h2 id="why-title">Most agencies pick a side. We didn't.</h2>
+      <h2 id="why-title">Scalable Delivery. Reliable Quality. Human Expertise.</h2>
       <p class="lede">
-        Data services and software engineering are usually two different suppliers,
-        two contracts and two versions of who's at fault. Running both under one
-        roof isn't a bundle — it changes how the work gets done, and it matters
-        most to teams building AI products.
+        Every project has a different purpose, and every dataset has different requirements. We take the time to understand yours and build a workflow around your goals, timeline, and quality expectations.
       </p>
     </div>
 
-    <div class="compare" id="why-compare"><!-- rendered from config --></div>
-
     <div class="grid grid--2" id="why-points"><!-- rendered from config --></div>
+    <p class="lede" style="margin-top:var(--s-8)">Because when the data is right, everything built on top of it becomes stronger.</p>
 
   </div>
 </section>
@@ -720,13 +746,7 @@
     <div class="footer__top">
       <div>
         <a class="logo" href="#hero" aria-label="Orbitech — back to top">
-          <svg class="logo__mark" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-               stroke-width="1.6" aria-hidden="true">
-            <circle cx="12" cy="12" r="3.6"/>
-            <ellipse cx="12" cy="12" rx="10" ry="4.6" transform="rotate(-28 12 12)"/>
-            <circle cx="20.4" cy="8.2" r="1.6" fill="currentColor" stroke="none"/>
-          </svg>
-          <span class="logo__text">Orbitech</span>
+          <img class="logo__image" src="assets/img/orbitech-logo.png" alt="Orbitech" width="1697" height="438">
         </a>
         <p class="footer__brand-text" id="footer-desc"><!-- from config --></p>
         <div class="footer__socials" id="footer-socials"><!-- from config --></div>
@@ -746,6 +766,7 @@
 
 <script src="assets/js/content.config.js"></script>
 <script src="assets/js/app.js" defer></script>
+<script src="assets/js/sky.js" defer></script>
 
 </body>
 </html>

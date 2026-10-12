@@ -1,3 +1,21 @@
+/* Local, preloaded fonts. Briefly wait for the original brand typography. */
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 400 700;
+  font-display: block;
+  src: url(../fonts/inter-latin.woff2) format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: 'Space Grotesk';
+  font-style: normal;
+  font-weight: 500 700;
+  font-display: block;
+  src: url(../fonts/space-grotesk-latin.woff2) format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
 /* ==========================================================================
    ORBITECH — Design System & Stylesheet
    --------------------------------------------------------------------------
@@ -92,10 +110,10 @@
   --section-y: clamp(4.5rem, 9vw, 9rem);
 
   /* --- Layout ------------------------------------------------------------ */
-  --container: 1200px;
+  --container: clamp(1200px, 86vw, 1920px);
   --container-narrow: 780px;
   --gutter: clamp(1.25rem, 4vw, 3rem);
-  --header-h: 68px;
+  --header-h: 76px;
 
   /* --- Radii & elevation -------------------------------------------------- */
   --r-sm: 6px;   --r-md: 10px;   --r-lg: 16px;   --r-xl: 24px;  --r-full: 999px;
@@ -132,9 +150,16 @@
 
 html {
   -webkit-text-size-adjust: 100%;
+  scrollbar-gutter: stable;
   scroll-behavior: smooth;
   /* Offset anchor targets so the sticky header never covers a heading */
   scroll-padding-top: calc(var(--header-h) + var(--s-4));
+}
+
+/* Increase the rem-based type and spacing gradually on large monitors.
+   The rem term preserves the visitor's preferred browser font size. */
+@media screen and (min-width: 1600px) {
+  html { font-size: clamp(100%, calc(0.75rem + 0.25vw), 125%); }
 }
 
 body {
@@ -343,6 +368,7 @@ p { text-wrap: pretty; }
   letter-spacing: 0;
 }
 
+/* Section intro block: eyebrow + heading + lede */
 .section-head { max-width: 64ch; margin-bottom: var(--s-12); }
 .section-head > * + * { margin-top: var(--s-4); }
 
@@ -541,6 +567,15 @@ p { text-wrap: pretty; }
   transition: color var(--dur-fast) var(--ease-out),
               border-color var(--dur-fast) var(--ease-out),
               background var(--dur-fast) var(--ease-out);
+}
+
+.language-flag {
+  width: 1.875rem;
+  height: 1.125rem;
+  flex-shrink: 0;
+  object-fit: cover;
+  border-radius: 2px;
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.15);
 }
 
 .tag--accent {
@@ -877,7 +912,7 @@ select.field__control option { background: var(--c-surface); color: var(--c-text
   inset: 0;
   z-index: var(--z-intro);
   background: var(--c-void);
-  transition: opacity 900ms var(--ease-out), visibility 0s linear 900ms;
+  transition: opacity 650ms var(--ease-out), visibility 0s linear 650ms;
 }
 
 .intro[hidden] { display: none; }
@@ -889,6 +924,19 @@ select.field__control option { background: var(--c-surface); color: var(--c-text
 }
 
 .intro__canvas { width: 100%; height: 100%; display: block; }
+
+.intro__identity {
+  position: absolute;
+  left: 50%;
+  top: 48%;
+  width: clamp(320px, 38vw, 560px);
+  transform: translate(-50%, -50%);
+  opacity: 0;
+  pointer-events: none;
+  will-change: transform, opacity;
+}
+
+.intro__identity img { width: 100%; height: auto; }
 
 /* Vignette + horizon glow sitting above the canvas */
 .intro__vignette {
@@ -934,7 +982,9 @@ select.field__control option { background: var(--c-surface); color: var(--c-text
   position: absolute;
   left: 0; bottom: 0;
   height: 2px;
-  width: 0%;
+  width: 100%;
+  transform: scaleX(0);
+  transform-origin: left;
   background: var(--g-accent);
   z-index: 2;
 }
@@ -950,7 +1000,7 @@ select.field__control option { background: var(--c-surface); color: var(--c-text
   font-size: var(--t-xs);
   letter-spacing: var(--ls-caps);
   text-transform: uppercase;
-  color: var(--c-text-dim);
+  color: var(--c-text-muted);
   opacity: 0;
   transition: opacity 700ms var(--ease-out);
   padding-inline: var(--gutter);
@@ -973,13 +1023,20 @@ select.field__control option { background: var(--c-surface); color: var(--c-text
   background: rgba(5, 8, 16, 0.96);
   border-bottom: 1px solid transparent;
 
-  /* Hidden until the user scrolls past the hero */
   opacity: 0;
+  visibility: hidden;
   transform: translateY(-100%);
   pointer-events: none;
   transition: opacity var(--dur-med) var(--ease-out),
               transform var(--dur-med) var(--ease-out),
               border-color var(--dur-med) var(--ease-out);
+}
+
+.header.is-visible {
+  opacity: 1;
+  visibility: visible;
+  transform: none;
+  pointer-events: auto;
 }
 
 @supports ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
@@ -990,11 +1047,12 @@ select.field__control option { background: var(--c-surface); color: var(--c-text
   }
 }
 
-.header.is-visible {
+.header.is-scrolled {
   opacity: 1;
   transform: translateY(0);
   pointer-events: auto;
   border-bottom-color: var(--c-line);
+  box-shadow: 0 8px 32px rgba(0,0,0,0.16);
 }
 
 .header__inner {
@@ -1033,6 +1091,29 @@ select.field__control option { background: var(--c-surface); color: var(--c-text
   font-size: 1.1875rem;
   font-weight: 700;
   letter-spacing: -0.015em;
+}
+
+/* Original horizontal artwork supplied in the company logo PDF. */
+.logo__image {
+  display: block;
+  width: 148px;
+  height: auto;
+}
+
+.hero__logo {
+  display: block;
+  width: clamp(300px, 62vw, 760px);
+  max-width: 100%;
+  height: auto;
+  margin: 0 auto var(--s-6);
+}
+
+.footer .logo__image { width: 180px; }
+
+@media screen and (min-width: 1600px) {
+  .hero__logo { width: clamp(760px, 48vw, 1040px); }
+  .logo__image { width: 10rem; }
+  .footer .logo__image { width: 12rem; }
 }
 
 /* --- Desktop nav ------------------------------------------------------------ */
@@ -1160,73 +1241,132 @@ select.field__control option { background: var(--c-surface); color: var(--c-text
 }
 
 /* Static space backdrop — this is also the mobile / reduced-motion poster.
-   Pure CSS so there is no image request blocking LCP. */
+   Pure CSS so there is no image request blocking LCP.
+
+   The four coloured clouds mirror `this.nebulae` in intro.js one for one:
+   same positions, same radii (vmax matches the canvas's max(w,h) basis), same
+   alphas. That is what makes the intro able to dissolve into this rather than
+   cut to it. Change one, change the other. */
+.hero__sky {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  z-index: -1;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 1400ms var(--ease-out);
+}
+
+.hero__sky.is-ready { opacity: 1; }
+
+@media print { .hero__sky { display: none; } }
+
 .hero__backdrop {
   position: absolute;
   inset: 0;
   z-index: -2;
   background:
-    radial-gradient(90% 55% at 50% 118%, rgba(79, 216, 232, 0.22), transparent 60%),
-    radial-gradient(60% 45% at 12% 8%,  rgba(139, 124, 255, 0.16), transparent 65%),
-    radial-gradient(55% 40% at 88% 22%, rgba(79, 216, 232, 0.10), transparent 60%),
-    linear-gradient(180deg, #04060d 0%, #060a15 45%, #081020 100%);
+    radial-gradient(circle 58vmax at 12% 8%,
+      rgba(139, 124, 255, 0.17) 0%, rgba(139, 124, 255, 0.055) 45%, transparent 100%),
+    radial-gradient(circle 52vmax at 88% 22%,
+      rgba(79, 216, 232, 0.12) 0%, rgba(79, 216, 232, 0.038) 45%, transparent 100%),
+    radial-gradient(circle 84vmax at 50% 108%,
+      rgba(79, 216, 232, 0.23) 0%, rgba(79, 216, 232, 0.074) 45%, transparent 100%),
+    radial-gradient(circle 44vmax at 26% 60%,
+      rgba(139, 124, 255, 0.10) 0%, rgba(139, 124, 255, 0.032) 45%, transparent 100%),
+    #03050b;
 }
 
-/* Star layer, drawn as tiled radial-gradient dots — no image, no JS */
+/* Star layer — a fixed field of radial-gradient dots. No image request, no
+   JS. Density is matched to the intro canvas's star count so the cross-fade
+   from the animation into this static poster reads as one continuous sky. */
 .hero__stars {
   position: absolute;
   inset: 0;
   z-index: -1;
   pointer-events: none;
-  opacity: 0.9;
   background-image:
-    radial-gradient(1.4px 1.4px at 12% 18%,  rgba(255,255,255,0.9), transparent),
-    radial-gradient(1.1px 1.1px at 34% 62%,  rgba(210,232,255,0.75), transparent),
-    radial-gradient(1.6px 1.6px at 57% 12%,  rgba(255,255,255,0.85), transparent),
-    radial-gradient(1px   1px   at 71% 44%,  rgba(190,220,255,0.7), transparent),
-    radial-gradient(1.3px 1.3px at 88% 72%,  rgba(255,255,255,0.8), transparent),
-    radial-gradient(1px   1px   at 22% 84%,  rgba(200,225,255,0.65), transparent),
-    radial-gradient(1.7px 1.7px at 46% 33%,  rgba(255,255,255,0.65), transparent),
-    radial-gradient(1px   1px   at 92% 26%,  rgba(220,240,255,0.6), transparent),
-    radial-gradient(1.2px 1.2px at 8%  52%,  rgba(255,255,255,0.55), transparent),
-    radial-gradient(1px   1px   at 64% 88%,  rgba(210,232,255,0.6), transparent);
-  background-size: 100% 100%;
+    radial-gradient(1.5px 1.5px at 32.7% 16.2%, rgba(255,255,255,0.35), transparent),
+    radial-gradient(1.3px 1.3px at 10.2% 61.1%, rgba(150,232,246,0.45), transparent),
+    radial-gradient(1.3px 1.3px at 42.0% 25.4%, rgba(255,255,255,0.57), transparent),
+    radial-gradient(1.5px 1.5px at 13.1% 23.6%, rgba(150,232,246,0.67), transparent),
+    radial-gradient(1.0px 1.0px at 58.4% 5.9%, rgba(255,255,255,0.35), transparent),
+    radial-gradient(0.9px 0.9px at 29.4% 15.5%, rgba(255,255,255,0.66), transparent),
+    radial-gradient(1.3px 1.3px at 67.8% 11.3%, rgba(255,255,255,0.7), transparent),
+    radial-gradient(0.9px 0.9px at 54.7% 7.2%, rgba(255,255,255,0.69), transparent),
+    radial-gradient(1.2px 1.2px at 53.1% 81.6%, rgba(255,255,255,0.67), transparent),
+    radial-gradient(1.5px 1.5px at 30.4% 83.4%, rgba(150,232,246,0.79), transparent),
+    radial-gradient(1.1px 1.1px at 30.4% 51.9%, rgba(255,255,255,0.76), transparent),
+    radial-gradient(1.2px 1.2px at 97.1% 12.8%, rgba(255,255,255,0.42), transparent),
+    radial-gradient(1.5px 1.5px at 92.5% 44.2%, rgba(255,255,255,0.37), transparent),
+    radial-gradient(1.1px 1.1px at 78.3% 85.9%, rgba(255,255,255,0.74), transparent),
+    radial-gradient(1.7px 1.7px at 57.8% 47.8%, rgba(255,255,255,0.38), transparent),
+    radial-gradient(1.5px 1.5px at 69.3% 7.5%, rgba(255,255,255,0.74), transparent),
+    radial-gradient(1.1px 1.1px at 98.3% 86.3%, rgba(255,255,255,0.75), transparent),
+    radial-gradient(1.1px 1.1px at 35.0% 96%, rgba(150,232,246,0.42), transparent),
+    radial-gradient(1.0px 1.0px at 6.8% 80.6%, rgba(255,255,255,0.76), transparent),
+    radial-gradient(1.0px 1.0px at 90.8% 52.0%, rgba(255,255,255,0.59), transparent),
+    radial-gradient(1.7px 1.7px at 87.6% 86.0%, rgba(255,255,255,0.65), transparent),
+    radial-gradient(1.2px 1.2px at 97.7% 71.6%, rgba(186,176,255,0.89), transparent),
+    radial-gradient(1.0px 1.0px at 18.3% 24.5%, rgba(255,255,255,0.33), transparent),
+    radial-gradient(1.0px 1.0px at 18.9% 29.7%, rgba(255,255,255,0.57), transparent),
+    radial-gradient(1.5px 1.5px at 56.5% 96%, rgba(255,255,255,0.84), transparent),
+    radial-gradient(1.2px 1.2px at 65.2% 77.6%, rgba(255,255,255,0.86), transparent),
+    radial-gradient(1.2px 1.2px at 86.7% 83.8%, rgba(255,255,255,0.56), transparent),
+    radial-gradient(1.0px 1.0px at 48.2% 42.0%, rgba(255,255,255,0.36), transparent),
+    radial-gradient(0.9px 0.9px at 16.9% 35.7%, rgba(255,255,255,0.38), transparent),
+    radial-gradient(1.3px 1.3px at 53.6% 96%, rgba(255,255,255,0.34), transparent),
+    radial-gradient(1.1px 1.1px at 61.2% 16.0%, rgba(255,255,255,0.89), transparent),
+    radial-gradient(1.2px 1.2px at 47.5% 12.6%, rgba(255,255,255,0.92), transparent),
+    radial-gradient(0.9px 0.9px at 48.4% 9.6%, rgba(255,255,255,0.77), transparent),
+    radial-gradient(1.3px 1.3px at 47.9% 72.6%, rgba(255,255,255,0.33), transparent),
+    radial-gradient(1.3px 1.3px at 52.8% 15.8%, rgba(255,255,255,0.87), transparent),
+    radial-gradient(0.9px 0.9px at 30.2% 67.4%, rgba(255,255,255,0.74), transparent),
+    radial-gradient(1.7px 1.7px at 36.9% 17.8%, rgba(255,255,255,0.45), transparent),
+    radial-gradient(1.3px 1.3px at 50.3% 66.7%, rgba(255,255,255,0.81), transparent),
+    radial-gradient(1.7px 1.7px at 84.6% 84.6%, rgba(255,255,255,0.56), transparent),
+    radial-gradient(1.5px 1.5px at 20.6% 51.7%, rgba(150,232,246,0.34), transparent),
+    radial-gradient(1.5px 1.5px at 28.4% 27.3%, rgba(255,255,255,0.68), transparent),
+    radial-gradient(1.1px 1.1px at 80.2% 75.9%, rgba(255,255,255,0.89), transparent),
+    radial-gradient(1.0px 1.0px at 22.6% 24.0%, rgba(255,255,255,0.52), transparent),
+    radial-gradient(0.9px 0.9px at 97.6% 64.0%, rgba(255,255,255,0.61), transparent),
+    radial-gradient(1.5px 1.5px at 79.4% 9.5%, rgba(255,255,255,0.39), transparent),
+    radial-gradient(1.0px 1.0px at 70.7% 21.2%, rgba(255,255,255,0.58), transparent),
+    radial-gradient(1.5px 1.5px at 9.5% 96%, rgba(255,255,255,0.56), transparent),
+    radial-gradient(1.0px 1.0px at 93.8% 76.0%, rgba(150,232,246,0.92), transparent),
+    radial-gradient(1.5px 1.5px at 58.9% 48.8%, rgba(255,255,255,0.41), transparent),
+    radial-gradient(1.1px 1.1px at 97.1% 68.9%, rgba(255,255,255,0.41), transparent),
+    radial-gradient(1.5px 1.5px at 3.1% 83.9%, rgba(255,255,255,0.71), transparent),
+    radial-gradient(1.7px 1.7px at 92.5% 45.5%, rgba(255,255,255,0.44), transparent),
+    radial-gradient(1.3px 1.3px at 3.7% 22.6%, rgba(255,255,255,0.46), transparent),
+    radial-gradient(1.0px 1.0px at 26.4% 43.9%, rgba(255,255,255,0.36), transparent),
+    radial-gradient(1.7px 1.7px at 89.0% 69.5%, rgba(255,255,255,0.86), transparent),
+    radial-gradient(1.3px 1.3px at 90.9% 52.6%, rgba(255,255,255,0.41), transparent),
+    radial-gradient(1.3px 1.3px at 86.5% 81.5%, rgba(255,255,255,0.32), transparent),
+    radial-gradient(1.5px 1.5px at 17.9% 49.6%, rgba(150,232,246,0.39), transparent);
+  background-repeat: no-repeat;
 }
 
-/* Planet limb curving across the bottom of the hero */
-.hero__planet {
+/* Shared diffuse nebula: the same cloud layer sits in the intro and hero.
+   Keep it transparent and edge-free so the cross-fade has no horizon seam. */
+.space-nebula {
   position: absolute;
-  z-index: -1;
-  left: 50%;
-  bottom: -78vw;
-  width: 190vw;
-  height: 190vw;
-  max-width: 2400px;
-  max-height: 2400px;
-  transform: translateX(-50%);
-  border-radius: 50%;
+  inset: 0;
   pointer-events: none;
   background:
-    radial-gradient(60% 60% at 50% 8%, rgba(79, 216, 232, 0.18), transparent 70%),
-    linear-gradient(180deg, #0b1c33 0%, #070f1e 40%, #04060d 100%);
-  box-shadow:
-    0 -1px 0 0 rgba(120, 220, 240, 0.45),
-    0 -18px 70px -10px rgba(79, 216, 232, 0.35);
+    radial-gradient(ellipse 60% 24% at 24% 103%,
+      rgba(79,216,232,0.18), rgba(79,216,232,0.055) 45%, transparent 78%),
+    radial-gradient(ellipse 46% 28% at 82% 105%,
+      rgba(139,124,255,0.17), rgba(139,124,255,0.045) 48%, transparent 80%),
+    radial-gradient(ellipse 35% 13% at 53% 96%,
+      rgba(79,216,232,0.09), transparent 78%),
+    radial-gradient(ellipse 28% 18% at 13% 89%,
+      rgba(139,124,255,0.065), transparent 80%);
 }
 
-/* On narrow screens the planet is proportionally much larger relative to the
-   hero, which pushed its bright rim up through the body copy. Sink it so the
-   rim sits just below the text and only the glow reaches the content. */
-@media (max-width: 820px) {
-  .hero__planet {
-    width: 240vw;
-    height: 240vw;
-    bottom: calc(-240vw + 3vh);
-    box-shadow:
-      0 -1px 0 0 rgba(120, 220, 240, 0.34),
-      0 -14px 52px -12px rgba(79, 216, 232, 0.30);
-  }
-}
+.hero > .space-nebula { z-index: -1; }
+.intro > .space-nebula { opacity: var(--nebula-opacity, 0); }
 
 .hero__inner {
   position: relative;
@@ -1237,17 +1377,55 @@ select.field__control option { background: var(--c-surface); color: var(--c-text
   text-align: center;
 }
 
+/* --- Hero entrance -----------------------------------------------------
+   The intro overlay cross-dissolves into the hero backdrop, which is built to
+   match its final frame. The copy stays at its final layout position and fades in during the
+   dissolve. Moving it again here would introduce a second landing motion.
+
+   `intro-pending` is set on <html> by the bootstrap in index.html, and only
+   when the intro is actually going to run. Every other path — mobile, reduced
+   motion, a repeat visit, no JavaScript — never gets the hidden state, so the
+   hero is simply visible from the first paint.
+   ----------------------------------------------------------------------- */
+
+html.intro-pending .hero__inner > * { opacity: 0; }
+html.hero-in      .hero__inner > * { opacity: 1; transform: none; }
+html.intro-pending .hero__inner > .hero__logo.is-landed { opacity: 1; transform: none; }
+
+/* The scroll cue is centred with translateX(-50%), so its entrance has to
+   carry that translation through rather than replacing it. */
+html.intro-pending .hero__scroll { opacity: 0; transform: translateX(-50%); }
+html.hero-in      .hero__scroll { opacity: 1; transform: translateX(-50%); }
+
+html.hero-in .hero__inner > *,
+html.hero-in .hero__scroll {
+  transition: opacity 650ms var(--ease-out);
+  transition-delay: var(--enter-delay, 0ms);
+}
+
+html.hero-in .hero__inner > *:nth-child(1) { --enter-delay:   0ms; }
+html.hero-in .hero__inner > *:nth-child(2) { --enter-delay: 130ms; }
+html.hero-in .hero__inner > *:nth-child(3) { --enter-delay: 300ms; }
+html.hero-in .hero__inner > *:nth-child(4) { --enter-delay: 450ms; }
+html.hero-in .hero__inner > *:nth-child(5) { --enter-delay: 580ms; }
+html.hero-in .hero__inner > *:nth-child(6) { --enter-delay: 680ms; }
+html.hero-in .hero__scroll                 { --enter-delay: 760ms; }
+
 .hero__badge { margin-bottom: var(--s-6); }
 
 .hero__title {
+  font-size: clamp(2rem, 4vw, 3.5rem);
   margin-bottom: var(--s-6);
   font-weight: 700;
   letter-spacing: -0.035em;
 }
 
 .hero__sub {
-  max-width: 60ch;
+  max-width: 104ch;
+  width: 100%;
   margin-inline: auto;
+  text-align: center;
+  text-wrap: balance;
   font-size: var(--t-md);
   color: var(--c-text-muted);
 }
@@ -1280,7 +1458,10 @@ select.field__control option { background: var(--c-surface); color: var(--c-text
   font-size: var(--t-xs);
   letter-spacing: var(--ls-wide);
   text-transform: uppercase;
-  color: var(--c-text-dim);
+  /* Sits low in the hero, over the lower nebula haze — needs more weight than
+     --c-text-dim to stay legible against it. */
+  color: var(--c-text-muted);
+  text-shadow: 0 1px 3px rgba(2, 5, 12, 0.85);
 }
 .hero__pillar::before {
   content: "";
@@ -1308,7 +1489,8 @@ select.field__control option { background: var(--c-surface); color: var(--c-text
   font-size: 0.6875rem;
   letter-spacing: var(--ls-caps);
   text-transform: uppercase;
-  color: var(--c-text-dim);
+  color: var(--c-text-muted);
+  text-shadow: 0 1px 3px rgba(2, 5, 12, 0.85);
   text-decoration: none;
 }
 .hero__scroll:hover { color: var(--c-accent); }
@@ -1344,8 +1526,8 @@ select.field__control option { background: var(--c-surface); color: var(--c-text
   display: flex;
   align-items: baseline;
   flex-wrap: wrap;          /* the note drops to its own line on narrow screens */
-  gap: var(--s-3) var(--s-4);
-  margin-bottom: var(--s-8);
+  gap: var(--s-2) var(--s-4);
+  margin-bottom: var(--s-6);
 }
 .subhead__title {
   display: flex;
@@ -1364,12 +1546,12 @@ select.field__control option { background: var(--c-surface); color: var(--c-text
   border-radius: 2px;
   background: var(--c-accent);
   box-shadow: 0 0 12px 1px color-mix(in srgb, var(--c-accent) 70%, transparent);
+  align-self: center;
 }
 .subhead__rule {
   flex: 1 1 40px;
   min-width: 40px;
   height: 1px;
-  align-self: center;
   background: linear-gradient(90deg, var(--c-line-strong), transparent);
 }
 .subhead__note {
@@ -1393,12 +1575,73 @@ select.field__control option { background: var(--c-surface); color: var(--c-text
     radial-gradient(80% 120% at 100% 0%, rgba(139,124,255,0.08), transparent 60%),
     var(--c-surface);
 }
-@media (min-width: 900px) {
-  .lang-panel { grid-template-columns: minmax(0, 260px) 1fr; gap: var(--s-12); }
-}
+.lang-panel { grid-template-columns: minmax(0, 1fr); }
 
 .lang-panel__aside { display: flex; flex-direction: column; gap: var(--s-3); }
-.lang-group + .lang-group { margin-top: var(--s-6); }
+.lang-panel__coverage {
+  align-self: flex-start;
+  padding: var(--s-2) var(--s-3);
+  border: 1px solid rgba(79, 216, 232, 0.25);
+  border-radius: var(--r-full);
+  background: rgba(79, 216, 232, 0.08);
+  color: var(--c-accent);
+  font-size: var(--t-sm);
+  font-weight: 600;
+}
+
+.lang-panel__intro {
+  max-width: none;
+  font-size: var(--t-base);
+  line-height: 1.65;
+}
+
+.lang-panel .tag-cloud {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--s-2);
+}
+
+.lang-panel .tag-cloud li { min-width: 0; }
+
+.lang-panel .tag {
+  width: 100%;
+  min-height: 2.75rem;
+  padding: var(--s-2);
+  gap: var(--s-2);
+  border-radius: var(--r-sm);
+  font-size: var(--t-sm);
+  color: var(--c-text);
+}
+
+.lang-panel .language-flag {
+  width: 1.5rem;
+  height: 0.9rem;
+}
+
+@media (min-width: 1200px) {
+  #lang-groups .tag-cloud { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+}
+
+@media (max-width: 479px) {
+  .lang-panel { padding: var(--s-5); }
+  .lang-panel .tag { gap: var(--s-2); padding: var(--s-2); }
+}
+
+#lang-groups {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--s-6);
+}
+
+#lang-groups .lang-group { min-width: 0; margin-top: 0; }
+
+@media (min-width: 900px) {
+  #lang-groups { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+@media (min-width: 900px) and (max-width: 1199px) {
+  #lang-groups .tag-cloud { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
 
 .lang-group__label {
   display: block;
@@ -1412,24 +1655,142 @@ select.field__control option { background: var(--c-surface); color: var(--c-text
 
 /* --- Tech stack ------------------------------------------------------------- */
 
-.stack-grid { display: grid; gap: var(--s-5); }
-@media (min-width: 720px) { .stack-grid { grid-template-columns: repeat(2, 1fr); } }
-@media (min-width: 1024px) { .stack-grid { grid-template-columns: repeat(4, 1fr); } }
-
-.stack-group__label {
-  display: block;
-  margin-bottom: var(--s-4);
-  padding-bottom: var(--s-3);
-  border-bottom: 1px solid var(--c-line);
-  font-family: var(--font-mono);
-  font-size: var(--t-xs);
-  letter-spacing: var(--ls-caps);
-  text-transform: uppercase;
-  color: var(--c-accent);
+.toolkit {
+  padding: clamp(1.25rem, 3vw, 3rem);
+  border: 1px solid var(--c-line);
+  border-radius: var(--r-xl);
+  background: radial-gradient(ellipse at 100% 0, rgba(139,124,255,0.07), transparent 55%), var(--c-surface);
 }
 
-.stack-group__list { display: flex; flex-direction: column; gap: var(--s-2); }
-.stack-group__item { font-size: var(--t-sm); color: var(--c-text-muted); }
+.toolkit__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s-8);
+  margin-bottom: var(--s-8);
+}
+.toolkit__title {
+  margin-top: var(--s-3);
+  font-size: clamp(1.75rem, 2.6vw, 2.75rem);
+  letter-spacing: -0.035em;
+  line-height: var(--lh-tight);
+}
+.toolkit__title > span { color: var(--c-accent); }
+.toolkit__intro { max-width: 58ch; margin-top: var(--s-4); color: var(--c-text-muted); }
+.toolkit__inventory {
+  display: flex;
+  align-items: center;
+  gap: var(--s-4);
+  flex-shrink: 0;
+  padding-left: var(--s-8);
+  border-left: 1px solid var(--c-line-strong);
+  font-size: var(--t-sm);
+  color: var(--c-text-muted);
+}
+.toolkit__count {
+  font-family: var(--font-display);
+  font-size: clamp(2.75rem, 4vw, 4.5rem);
+  font-weight: 600;
+  line-height: 1;
+  letter-spacing: -0.05em;
+  color: var(--c-text);
+}
+
+.toolkit__filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s-2);
+  margin-bottom: var(--s-6);
+  padding-top: var(--s-6);
+  border-top: 1px solid var(--c-line);
+}
+.toolkit__filter {
+  min-height: 44px;
+  padding: var(--s-2) var(--s-4);
+  border: 1px solid transparent;
+  border-radius: var(--r-full);
+  background: transparent;
+  font-size: var(--t-sm);
+  font-weight: 500;
+  color: var(--c-text-muted);
+  cursor: pointer;
+  transition: color 180ms ease, border-color 180ms ease, background 180ms ease;
+}
+.toolkit__filter:hover { color: var(--c-text); background: rgba(255,255,255,0.04); }
+.toolkit__filter[aria-pressed="true"] {
+  color: var(--c-accent);
+  background: rgba(79,216,232,0.08);
+  border-color: rgba(79,216,232,0.3);
+}
+
+.stack-grid { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--s-4); }
+.stack-group {
+  --stack-accent: var(--c-accent);
+  position: relative;
+  min-width: 0;
+  padding: clamp(1.25rem, 2.2vw, 2rem);
+  border: 1px solid var(--c-line);
+  border-radius: var(--r-lg);
+  background: rgba(4,6,13,0.5);
+  transition: border-color 240ms ease, background 240ms ease;
+}
+.stack-group:nth-child(even) { --stack-accent: #b5a5ff; }
+.stack-group:hover { border-color: var(--c-line-strong); background: rgba(12,17,29,0.75); }
+.stack-group[hidden] { display: none !important; }
+.stack-group__top { display: flex; align-items: center; justify-content: space-between; margin-bottom: var(--s-6); }
+.stack-group__icon {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  color: var(--stack-accent);
+  border: 1px solid var(--c-line-strong);
+  border-radius: var(--r-sm);
+  background: rgba(255,255,255,0.025);
+}
+.stack-group__icon svg { width: 23px; height: 23px; }
+.stack-group__index { font-family: var(--font-mono); font-size: var(--t-xs); color: var(--c-text-dim); letter-spacing: var(--ls-wide); }
+.stack-group__heading { display: flex; align-items: baseline; justify-content: space-between; flex-wrap: wrap; gap: var(--s-2); }
+.stack-group__label { font-size: var(--t-lg); letter-spacing: -0.025em; }
+.stack-group__count { color: var(--c-text-dim); font-family: var(--font-mono); font-size: var(--t-xs); white-space: nowrap; }
+.stack-group__description { color: var(--c-text-muted); font-size: var(--t-sm); margin-top: var(--s-3); max-width: 56ch; }
+.stack-group__list {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--s-2);
+  margin-top: var(--s-6);
+  padding-top: var(--s-5);
+  border-top: 1px solid var(--c-line);
+}
+.stack-group__item {
+  display: flex;
+  align-items: center;
+  gap: var(--s-2);
+  min-height: 44px;
+  padding: var(--s-2) var(--s-3);
+  border: 1px solid rgba(255,255,255,0.055);
+  border-radius: var(--r-sm);
+  background: rgba(255,255,255,0.025);
+  color: var(--c-text);
+  font-size: var(--t-sm);
+  overflow-wrap: anywhere;
+}
+.stack-group__dot { width: 4px; height: 4px; flex-shrink: 0; border-radius: 50%; background: var(--stack-accent); opacity: 0.7; }
+.toolkit__footer { margin-top: var(--s-6); color: var(--c-text-muted); font-size: var(--t-sm); text-align: center; }
+
+@media (min-width: 760px) {
+  .stack-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .stack-grid.is-filtered { grid-template-columns: minmax(0, 1fr); }
+  .stack-grid.is-filtered .stack-group__list { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+}
+@media (min-width: 1200px) {
+  .stack-group__list { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+@media (max-width: 759px) {
+  .toolkit__header { align-items: flex-start; flex-direction: column; gap: var(--s-5); }
+  .toolkit__inventory { padding-left: 0; border-left: 0; }
+  .toolkit__count { font-size: 2.75rem; }
+}
 
 /* --- Why Orbitech ------------------------------------------------------------ */
 
@@ -1773,6 +2134,169 @@ select.field__control option { background: var(--c-surface); color: var(--c-text
 
 
 /* ==========================================================================
+   PAGE POLISH — shared rhythm, quieter surfaces, distinct content roles
+   ========================================================================== */
+
+.header { border-bottom-color: rgba(146,170,219,0.08); }
+.nav__link { min-height: 44px; display: flex; align-items: center; }
+.nav__link[aria-current="true"] { background: rgba(79,216,232,0.07); }
+.header__cta { box-shadow: none; }
+html.intro-pending:not(.hero-in) .header { opacity: 0; pointer-events: none; }
+
+.hero { padding-block: calc(var(--header-h) + clamp(2.5rem, 5vh, 5rem)) 7rem; }
+.hero__logo { margin-bottom: clamp(1.5rem, 3vh, 2.5rem); }
+.hero__title { max-width: 28ch; margin-inline: auto; line-height: 1.16; }
+.hero__sub { line-height: 1.8; }
+.hero__actions { margin-top: var(--s-8); gap: var(--s-3); }
+.hero__pillars {
+  max-width: 58rem;
+  margin-top: var(--s-8);
+  padding-top: var(--s-6);
+  border-image: linear-gradient(90deg, transparent, var(--c-line-strong), transparent) 1;
+}
+.btn { letter-spacing: 0; }
+.btn--primary { box-shadow: 0 4px 22px -12px rgba(79,216,232,0.6); }
+.btn--secondary { background: rgba(4,6,13,0.3); }
+.btn--lg { min-width: 11rem; }
+
+.section-head { max-width: 52rem; }
+.section-head h2, .pillar-head__title { line-height: 1.12; }
+.pillar-head { align-items: start; gap: var(--s-8); }
+.pillar-head__title { max-width: 15ch; }
+.pillar-head__lede { line-height: 1.8; }
+.eyebrow { font-size: var(--t-xs); letter-spacing: 0.13em; margin-bottom: var(--s-4); }
+.eyebrow__badge { box-shadow: none; background: rgba(79,216,232,0.06); border-color: rgba(79,216,232,0.22); }
+.subsection { margin-top: clamp(3.5rem, 6vw, 6rem); }
+.subhead { margin-bottom: var(--s-8); gap: var(--s-3) var(--s-5); }
+.subhead__title { font-weight: 600; }
+.subhead__title::before { width: 5px; height: 5px; border-radius: 50%; box-shadow: none; }
+.subhead__note { letter-spacing: 0.01em; }
+
+/* Metrics read as a single editorial strip, rather than another card grid. */
+#data-stats, #software-stats {
+  gap: 0;
+  padding-block: var(--s-3);
+  border-block: 1px solid var(--c-line);
+}
+#data-stats .stat, #software-stats .stat {
+  border: 0;
+  border-radius: 0;
+  background: none;
+  padding: var(--s-6) clamp(1rem, 2vw, 2rem);
+}
+.stat__value { font-weight: 500; font-size: clamp(2rem, 3.2vw, 3.25rem); }
+.stat__label { margin-top: var(--s-4); }
+.stat__note { max-width: 30ch; }
+
+.card { padding: clamp(1.5rem, 2.4vw, 2.5rem); border-radius: var(--r-lg); background-image: none; }
+.service-card { background: rgba(12,18,34,0.6); gap: var(--s-4); }
+.service-card__icon { margin-bottom: var(--s-4); background: rgba(79,216,232,0.045); border-color: rgba(79,216,232,0.16); }
+#software-services .service-card__icon { color: var(--c-second-bright); background: rgba(139,124,255,0.05); border-color: rgba(139,124,255,0.18); }
+.service-card__title { max-width: 24ch; }
+.service-card__desc { line-height: 1.75; }
+.service-card__meta { line-height: 1.6; padding-top: var(--s-5); }
+
+/* Projects have more breathing room and their own restrained orbital motif. */
+.project-card {
+  isolation: isolate;
+  gap: var(--s-5);
+  background: linear-gradient(135deg, rgba(79,216,232,0.035), transparent 55%), var(--c-surface);
+}
+.project-card::before {
+  content: "";
+  position: absolute;
+  width: 15rem;
+  height: 15rem;
+  right: -9rem;
+  top: -9rem;
+  border: 1px solid rgba(79,216,232,0.14);
+  border-radius: 50%;
+  box-shadow: 0 0 0 1.5rem rgba(79,216,232,0.025), 0 0 0 3rem rgba(79,216,232,0.015);
+  pointer-events: none;
+  z-index: -1;
+}
+#software-work .project-card:nth-child(even)::before { border-color: rgba(139,124,255,0.2); }
+.project-card__top { padding-bottom: var(--s-5); border-bottom: 1px solid var(--c-line); }
+.project-card__client-name { font-size: var(--t-sm); color: var(--c-text-muted); }
+.project-card__sector { font-family: var(--font-body); font-size: var(--t-xs); text-transform: none; }
+.project-card__title { font-size: clamp(1.5rem, 2vw, 2rem); line-height: 1.2; }
+.project-card__summary { max-width: 65ch; line-height: 1.75; }
+.project-card > .cluster { margin-top: auto; padding-top: var(--s-2); gap: var(--s-2); }
+.project-card__metrics { gap: var(--s-5) var(--s-8); padding-top: var(--s-6); }
+
+.lang-panel, .toolkit { border-radius: var(--r-xl); padding: clamp(1.25rem, 3vw, 3rem); }
+.lang-panel__aside { padding-bottom: var(--s-6); border-bottom: 1px solid var(--c-line); gap: var(--s-5); }
+.lang-group__label { color: var(--c-text-muted); margin-bottom: var(--s-4); }
+.lang-panel .tag { background: rgba(255,255,255,0.025); border-color: rgba(146,170,219,0.1); }
+.stack-group { border-radius: var(--r-lg); }
+.toolkit__filter { transition: color var(--dur-fast), border-color var(--dur-fast), background var(--dur-fast); }
+.why-card { background: rgba(12,18,34,0.55); }
+.why-card__num { margin-bottom: var(--s-6); }
+.why-card .text-muted { line-height: 1.75; }
+.team-card__avatar { border-radius: var(--r-md); }
+.team-card__bio { line-height: 1.75; }
+
+.join__pitch-list { gap: var(--s-6); }
+.join__pitch-desc { margin-top: var(--s-2); line-height: 1.75; }
+.demand-panel { border-color: rgba(139,124,255,0.18); }
+.join__form-wrap, .contact__form-wrap {
+  padding: clamp(1.25rem, 3.2vw, 3rem);
+  border-color: var(--c-line);
+  background: linear-gradient(160deg, rgba(255,255,255,0.025), transparent 45%), var(--c-surface);
+  box-shadow: 0 24px 64px -40px rgba(0,0,0,0.65);
+}
+.field__control { min-height: 50px; padding: 0.875rem 1rem; background-color: rgba(4,6,13,0.4); border-color: var(--c-line-strong); }
+.segmented__face { padding: var(--s-5); }
+.trust-item { padding-top: var(--s-5); border-top: 1px solid var(--c-line); }
+.trust-item__icon { margin-bottom: var(--s-3); }
+.contact__details > * { padding-bottom: var(--s-5); border-bottom: 1px solid var(--c-line); }
+.contact__detail-value { overflow-wrap: anywhere; }
+.contact__crosslink { border-style: solid; background: rgba(79,216,232,0.025); }
+.footer { padding-top: clamp(3rem, 6vw, 6rem); }
+.footer__col-title { color: var(--c-text-muted); }
+.footer__social { width: 44px; height: 44px; }
+.footer__link { display: inline-block; padding-block: 0.2rem; }
+.footer__bottom { padding-top: var(--s-6); }
+
+@media (min-width: 960px) {
+  .pillar-head { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: clamp(3rem, 6vw, 7rem); }
+  .pillar-head__lede { margin-top: 0; padding-top: var(--s-2); }
+}
+@media (min-width: 1000px) {
+  #data-stats .stat + .stat, #software-stats .stat + .stat { border-left: 1px solid var(--c-line); }
+}
+@media (min-width: 760px) and (max-width: 999px) {
+  #software-stats { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  #software-stats .stat + .stat { border-left: 1px solid var(--c-line); }
+}
+@media (max-width: 999px) {
+  #data-stats .stat:nth-child(even) { border-left: 1px solid var(--c-line); }
+  #data-stats .stat:nth-child(n+3) { border-top: 1px solid var(--c-line); }
+}
+@media (max-width: 619px) {
+  #software-stats { grid-template-columns: minmax(0, 1fr); }
+  #software-stats .stat + .stat { border-top: 1px solid var(--c-line); }
+}
+@media (max-width: 759px) {
+  :root { --header-h: 68px; }
+  .hero { padding-top: calc(var(--header-h) + 3rem); padding-bottom: 6rem; }
+  .hero__title { font-size: clamp(1.75rem, 5.7vw, 2.5rem); }
+  .hero__sub { font-size: var(--t-base); line-height: 1.75; }
+  .hero__pillars { gap: var(--s-3) var(--s-4); }
+  .pillar-head__title { max-width: 19ch; }
+  .subhead__note { flex-basis: 100%; }
+  .lang-panel__coverage { border-radius: var(--r-md); }
+  .footer__top { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--s-8); }
+  .footer__top > :first-child { grid-column: 1 / -1; }
+}
+@media (hover: hover) and (pointer: fine) {
+  .card--interactive:hover { transform: translateY(-2px); border-color: rgba(79,216,232,0.3); box-shadow: 0 16px 40px -28px rgba(0,0,0,0.8); }
+}
+@media (hover: none) {
+  .card--interactive:hover { transform: none; box-shadow: none; }
+}
+
+/* ==========================================================================
    10. SCROLL REVEAL
    ========================================================================== */
 
@@ -1828,7 +2352,7 @@ html:not(.js-enabled) [data-reveal] { opacity: 1; transform: none; }
 /* Print: strip the space theme entirely so the page is readable on paper */
 @media print {
   .intro, .header, .mobile-menu, .hero__scroll,
-  .hero__backdrop, .hero__stars, .hero__planet { display: none !important; }
+  .hero__backdrop, .hero__stars, .space-nebula { display: none !important; }
 
   body { background: #fff; color: #000; }
   .card, .stat, .join__form-wrap, .contact__form-wrap {

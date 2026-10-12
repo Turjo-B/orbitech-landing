@@ -83,332 +83,396 @@ const ORBITECH = {
 
 
   /* ======================================================================
-     🔴 4. DATA SOLUTIONS PILLAR
+     4. DATA SOLUTIONS PILLAR — supplied company content
      ====================================================================== */
+  // Company content supplied in Untitled document.pdf.
   dataSolutions: {
-
-    /* Credibility metrics for this pillar: network scale, language breadth,
-       and quality — deliberately NOT in-house headcount. */
-    stats: [
-      {
-        value: "500+",                                     // 🔴 PLACEHOLDER
-        label: "Vetted specialists",
-        note: "Annotators, linguists and reviewers in our active network"
-      },
-      {
-        value: "100+",                                     // 🔴 PLACEHOLDER
-        label: "Languages supported",
-        note: "From high-volume majors to low-resource and regional variants"
-      },
-      {
-        value: "98.4%",                                    // 🔴 PLACEHOLDER
-        label: "Average acceptance rate",
-        note: "Units accepted on first client review, trailing 12 months"
-      },
-      {
-        value: "12M+",                                     // 🔴 PLACEHOLDER
-        label: "Units delivered",
-        note: "Annotated, transcribed and post-edited across all projects"
-      }
+    "stats": [
+        {
+            "value": "100+",
+            "label": "Languages supported",
+            "note": "Including regional variations and diverse dialects"
+        },
+        {
+            "value": "500+ h",
+            "label": "ASR audio delivered",
+            "note": "Across eight languages in our featured ASR project"
+        },
+        {
+            "value": "120,000+",
+            "label": "Words translated",
+            "note": "Across three language pairs in our featured translation project"
+        },
+        {
+            "value": "98%",
+            "label": "ASR project accuracy",
+            "note": "Achieved through structured quality control and review"
+        }
     ],
-
-    // 🔴 PLACEHOLDER — service copy. `icon` maps to a key in ICONS (app.js).
-    services: [
-      {
-        icon: "annotate",
-        title: "Data annotation",
-        desc: "Image, video, text and audio labelling for training and evaluation sets — bounding boxes, segmentation, NER, intent, sentiment, RLHF preference ranking.",
-        meta: "Image · Video · Text · Audio"
-      },
-      {
-        icon: "transcribe",
-        title: "Transcription",
-        desc: "Verbatim and clean-read transcription with speaker diarisation, timestamping and domain-specific terminology handling.",
-        meta: "Verbatim · Clean-read · Timecoded"
-      },
-      {
-        icon: "translate",
-        title: "Translation & localisation",
-        desc: "Human translation and full localisation, including UI strings, documentation and marketing copy, delivered with in-locale review.",
-        meta: "Human-first · In-locale review"
-      },
-      {
-        icon: "mtpe",
-        title: "MTPE",
-        desc: "Machine translation post-editing at light or full depth, tuned to your quality bar and turnaround, with per-engine performance reporting.",
-        meta: "Light & full post-edit"
-      },
-      {
-        icon: "collect",
-        title: "Data collection",
-        desc: "Sourced speech, image and text datasets collected to spec — demographics, accents, devices and environments defined up front.",
-        meta: "Speech · Image · Text"
-      },
-      {
-        icon: "qa",
-        title: "Quality assurance",
-        desc: "Independent second-pass review, inter-annotator agreement scoring and a sampling regime sized to your acceptance threshold.",
-        meta: "IAA scoring · Sampling QA"
-      }
+    "services": [
+        {
+            "icon": "annotate",
+            "title": "Data Annotation & Labeling",
+            "desc": "We turn raw images, videos, text, and audio into meaningful training data. Every annotation is created with your project's objectives in mind, helping AI systems recognize patterns, understand information, and make better decisions.",
+            "meta": "Image · Video · Text · Audio"
+        },
+        {
+            "icon": "transcribe",
+            "title": "Audio Transcription",
+            "desc": "We transform spoken language into clean, accurate, and usable data. From everyday conversations to complex multi speaker recordings, our teams handle diverse audio content with careful attention to context and detail.",
+            "meta": "Conversations · Multi-speaker recordings"
+        },
+        {
+            "icon": "translate",
+            "title": "Translation & Localization",
+            "desc": "Good translation is not simply about changing words from one language to another. Our language specialists preserve meaning, context, tone, and cultural nuance so your content feels natural wherever it is used.",
+            "meta": "Meaning · Context · Cultural nuance"
+        },
+        {
+            "icon": "mtpe",
+            "title": "Machine Translation Post Editing",
+            "desc": "We bring human judgment to machine generated translations. Our specialists review and refine content for accuracy, fluency, grammar, and natural expression while keeping the original meaning intact.",
+            "meta": "Accuracy · Fluency · Natural expression"
+        },
+        {
+            "icon": "collect",
+            "title": "Data Collection",
+            "desc": "The right dataset starts with the right source. We collect and organize customized text, audio, image, and video data according to your project's specific requirements, helping you build datasets that are relevant from the very beginning.",
+            "meta": "Text · Audio · Image · Video"
+        },
+        {
+            "icon": "qa",
+            "title": "Data Quality & Validation",
+            "desc": "Quality is not something we check only at the end. It is part of the process from start to finish. Our review and validation workflows help detect inconsistencies, reduce errors, and maintain the reliability your AI project depends on.",
+            "meta": "Review · Validation · Consistency"
+        }
     ],
-
-    /* 🔴 PLACEHOLDER — language coverage. Grouped for scannability.
-       Add or remove groups freely; the layout adapts. */
-    languageGroups: [
-      {
-        label: "High-volume",
-        languages: ["English", "Mandarin Chinese", "Spanish", "Hindi", "Arabic",
-                    "Portuguese", "Bengali", "Russian", "Japanese", "French",
-                    "German", "Indonesian"]
-      },
-      {
-        label: "European",
-        languages: ["Italian", "Dutch", "Polish", "Czech", "Swedish", "Danish",
-                    "Norwegian", "Finnish", "Greek", "Hungarian", "Romanian",
-                    "Ukrainian", "Bulgarian", "Croatian", "Slovak"]
-      },
-      {
-        label: "Asia-Pacific",
-        languages: ["Korean", "Vietnamese", "Thai", "Tagalog", "Malay", "Urdu",
-                    "Tamil", "Telugu", "Marathi", "Punjabi", "Nepali",
-                    "Sinhala", "Khmer", "Burmese"]
-      },
-      {
-        label: "Middle East & Africa",
-        languages: ["Hebrew", "Turkish", "Farsi", "Pashto", "Swahili", "Amharic",
-                    "Hausa", "Yoruba", "Zulu", "Afrikaans", "Somali"]
-      }
-    ],
-
-    // 🔴 PLACEHOLDER — shown beside the language list
-    languageNote: "Coverage extends well beyond this list, including low-resource and regional variants. If you don't see your language, ask — we can usually source it.",
-
-    /* 🔴 PLACEHOLDER — Featured work.
-       ── The card component handles BOTH formats: ──────────────────────────
-       NAMED client     → set  client: { name: "Acme Corp", sector: "..." }
-       ANONYMISED client→ set  client: { descriptor: "Fortune 500 e-commerce
-                                          client", sector: "..." }
-       Supply one or the other. Never both. Everything else is identical.  */
-    featuredWork: [
-      {
-        client: { descriptor: "Fortune 500 e-commerce client", sector: "Retail / Search" },
-        title: "Product catalogue annotation at scale",
-        summary: "Multi-attribute labelling of a global product catalogue to train a visual search and recommendation model, run across four languages with a rolling weekly delivery cadence.",
-        tags: ["Image annotation", "Taxonomy", "4 languages"],
-        metrics: [
-          { value: "2M",    label: "Units annotated" },
-          { value: "98%",   label: "Acceptance rate" },
-          { value: "11 wk", label: "End to end" }
-        ]
-      },
-      {
-        client: { name: "Northwind Speech Labs", sector: "Conversational AI" },
-        title: "Low-resource ASR training corpus",
-        summary: "Sourced, transcribed and quality-checked a speech corpus in nine under-served languages, including dialect tagging and speaker demographic balancing.",
-        tags: ["Transcription", "Data collection", "9 languages"],
-        metrics: [
-          { value: "4,200 h", label: "Audio transcribed" },
-          { value: "9",       label: "Languages" },
-          { value: "99.1%",   label: "Acceptance rate" }
-        ]
-      },
-      {
-        client: { descriptor: "European fintech scale-up", sector: "Financial services" },
-        title: "Regulated content localisation programme",
-        summary: "Ongoing MTPE and in-locale legal review for customer-facing product content across 14 EU markets, with a terminology base maintained jointly with their compliance team.",
-        tags: ["MTPE", "Localisation", "14 markets"],
-        metrics: [
-          { value: "1.8M", label: "Words post-edited" },
-          { value: "14",   label: "Markets live" },
-          { value: "48 h", label: "Standard turnaround" }
-        ]
-      },
-      {
-        client: { descriptor: "Frontier AI research lab", sector: "AI / Alignment" },
-        title: "Multilingual RLHF preference dataset",
-        summary: "Recruited and trained a specialist annotator cohort to produce preference rankings and written critiques for model output evaluation, with a double-blind review layer.",
-        tags: ["RLHF", "Preference ranking", "Expert cohort"],
-        metrics: [
-          { value: "310k", label: "Comparisons" },
-          { value: "0.84", label: "Inter-annotator κ" },
-          { value: "22",   label: "Languages" }
-        ]
-      }
+    "languageFlags": {
+        "English": "assets/img/flags/gb.svg",
+        "German": "assets/img/flags/de.svg",
+        "Greek": "assets/img/flags/gr.svg",
+        "French": "assets/img/flags/fr.svg",
+        "Spanish": "assets/img/flags/es.svg",
+        "Italian": "assets/img/flags/it.svg",
+        "Portuguese": "assets/img/flags/pt.svg",
+        "Arabic": "assets/img/flags/ae.svg",
+        "Bengali": "assets/img/flags/bd.svg",
+        "Hindi": "assets/img/flags/in.svg",
+        "Urdu": "assets/img/flags/pk.svg",
+        "Turkish": "assets/img/flags/tr.svg",
+        "Dutch": "assets/img/flags/nl.svg",
+        "Polish": "assets/img/flags/pl.svg",
+        "Russian": "assets/img/flags/ru.svg",
+        "Japanese": "assets/img/flags/jp.svg",
+        "Korean": "assets/img/flags/kr.svg",
+        "Chinese (Mandarin)": "assets/img/flags/cn.svg",
+        "Indonesian": "assets/img/flags/id.svg",
+        "Vietnamese": "assets/img/flags/vn.svg",
+        "Finnish": "assets/img/flags/fi.svg",
+        "Swedish": "assets/img/flags/se.svg"
+},
+    "languageGroups": [
+        {
+                "label": "Asia",
+                "languages": [
+                        "Arabic",
+                        "Bengali",
+                        "Chinese (Mandarin)",
+                        "Hindi",
+                        "Indonesian",
+                        "Japanese",
+                        "Korean",
+                        "Turkish",
+                        "Urdu",
+                        "Vietnamese"
+                ]
+        },
+        {
+                "label": "Europe",
+                "languages": [
+                        "Dutch",
+                        "English",
+                        "Finnish",
+                        "French",
+                        "German",
+                        "Greek",
+                        "Italian",
+                        "Polish",
+                        "Portuguese",
+                        "Russian",
+                        "Spanish",
+                        "Swedish"
+                ]
+        }
+],
+    "languageNote": "Language should never be a barrier to building intelligent technology. Our growing network of language specialists allows us to support projects across more than 100 languages, including regional variations and diverse dialects. Whether you need one language or a multilingual dataset at scale, we bring the same commitment to accuracy and consistency to every project.",
+    "featuredWork": [
+        {
+            "client": {
+                "sector": "Speech recognition"
+            },
+            "title": "ASR Transcription Project",
+            "summary": "A large-scale multilingual ASR data project covering 8 languages: German, French, Dutch, Finnish, Swedish, English, Urdu, and Bengali. Our team managed the complete data workflow, including audio transcription, annotation, and labeling, with 30 annotators dedicated to each language. Across 500 hours of audio, the project was successfully completed within the agreed deadline while achieving 98% accuracy through structured quality control and review. Project period: February–June.",
+            "tags": [
+                "Annotation",
+                "Transcription",
+                "Data Labeling"
+            ],
+            "metrics": [
+                {
+                    "value": "500+ h",
+                    "label": "Hours of audio"
+                },
+                {
+                    "value": "8",
+                    "label": "Languages"
+                },
+                {
+                    "value": "30",
+                    "label": "Annotators per language"
+                },
+                {
+                    "value": "98%",
+                    "label": "Accuracy"
+                }
+            ]
+        },
+        {
+            "client": {
+                "sector": "Language services"
+            },
+            "title": "Multilingual Translation Project",
+            "summary": "We delivered a multilingual translation project covering Bengali ↔ English, Hindi ↔ English, and Urdu ↔ English, with a combined volume of 120,000+ words. A dedicated team of 15 language specialists for each project handled the translation and review process, maintaining consistency, accuracy, and natural language quality throughout the work. The project was completed within the agreed timeline with 90%+ accuracy. Project period: June–July.",
+            "tags": [
+                "Translation",
+                "Localization",
+                "Quality Review"
+            ],
+            "metrics": [
+                {
+                    "value": "120,000+",
+                    "label": "Words"
+                },
+                {
+                    "value": "3",
+                    "label": "Language pairs"
+                },
+                {
+                    "value": "15",
+                    "label": "Specialists per project"
+                },
+                {
+                    "value": "90%+",
+                    "label": "Accuracy"
+                }
+            ]
+        }
     ]
-  },
+},
 
 
   /* ======================================================================
-     🔴 5. SOFTWARE DEVELOPMENT PILLAR
+     5. SOFTWARE DEVELOPMENT PILLAR — supplied company capabilities
      ====================================================================== */
+  // Software capabilities supplied in Orbitech_Portfolio_v3.pdf.
+  // Four featured projects selected by the user from the supplied portfolio.
   software: {
-
-    stats: [
-      {
-        value: "24",                                       // 🔴 PLACEHOLDER
-        label: "In-house engineers",
-        note: "Full-time product, platform and ML engineers — not subcontracted"
-      },
-      {
-        value: "7",                                        // 🔴 PLACEHOLDER
-        label: "Years active",
-        note: "Shipping production software since 2019"
-      },
-      {
-        value: "96%",                                      // 🔴 PLACEHOLDER
-        label: "Client satisfaction",
-        note: "Post-engagement survey score across completed projects"
-      },
-      {
-        value: "40+",                                      // 🔴 PLACEHOLDER
-        label: "Projects delivered",
-        note: "From focused integrations to multi-year platform builds"
-      }
+    "stats": [
+        {
+            "value": "10",
+            "label": "Software engineers",
+            "note": "Frontend, backend, mobile, machine learning, and DevOps"
+        },
+        {
+            "value": "15+",
+            "label": "Projects delivered",
+            "note": "Web platforms, mobile apps, AI-integrated tools, and backend systems"
+        },
+        {
+            "value": "30+",
+            "label": "Frameworks & tools",
+            "note": "Used across frontend, backend, data, AI, and infrastructure"
+        }
     ],
-
-    // 🔴 PLACEHOLDER
-    services: [
-      {
-        icon: "web",
-        title: "Custom web applications",
-        desc: "Product and internal-tooling builds from scoping through to launch — dashboards, portals, marketplaces and the APIs behind them.",
-        meta: "Product · Internal tools · APIs"
-      },
-      {
-        icon: "mobile",
-        title: "Mobile development",
-        desc: "Cross-platform and native mobile apps, built to ship on both stores from a single well-tested codebase.",
-        meta: "iOS · Android · Cross-platform"
-      },
-      {
-        icon: "ai",
-        title: "AI & ML engineering",
-        desc: "Model integration, RAG and retrieval systems, evaluation harnesses and inference infrastructure — production-grade, not notebooks.",
-        meta: "LLM · RAG · Evaluation"
-      },
-      {
-        icon: "pipeline",
-        title: "Data platform engineering",
-        desc: "Ingestion, transformation and annotation pipelines built to feed models reliably, with lineage and quality gates baked in.",
-        meta: "ETL · Pipelines · Lineage"
-      },
-      {
-        icon: "cloud",
-        title: "Cloud & DevOps",
-        desc: "Infrastructure as code, CI/CD, observability and cost optimisation — so what we build stays cheap and boring to operate.",
-        meta: "IaC · CI/CD · Observability"
-      },
-      {
-        icon: "consult",
-        title: "Technical consultancy",
-        desc: "Architecture review, discovery and delivery planning for teams who need a second opinion before committing budget.",
-        meta: "Architecture · Discovery · Audit"
-      }
+    "services": [
+        {
+            "icon": "web",
+            "title": "Web Platforms & Dashboards",
+            "desc": "Role-based portals, admin dashboards, and marketplaces built around how a product team actually operates.",
+            "meta": "Portals · Dashboards · Marketplaces"
+        },
+        {
+            "icon": "mobile",
+            "title": "Mobile Apps",
+            "desc": "Cross-platform iOS and Android apps from a single React Native codebase.",
+            "meta": "iOS · Android · React Native"
+        },
+        {
+            "icon": "ai",
+            "title": "AI-Integrated Features",
+            "desc": "OCR, natural-language data entry, recommendation engines, and predictive models.",
+            "meta": "OCR · Recommendations · Predictive models"
+        },
+        {
+            "icon": "pipeline",
+            "title": "Real-Time & Offline Systems",
+            "desc": "Live tracking, chat, and notifications, plus apps that keep working without a stable connection.",
+            "meta": "Live tracking · Chat · Offline support"
+        },
+        {
+            "icon": "cloud",
+            "title": "Backend & Infrastructure",
+            "desc": "Microservices, message queues, monitoring, and CI/CD built to production standards.",
+            "meta": "Microservices · Monitoring · CI/CD"
+        },
+        {
+            "icon": "consult",
+            "title": "Product Discovery & UX",
+            "desc": "Requirements gathering, prioritization, and interactive prototyping before code is written.",
+            "meta": "Discovery · Prioritization · Prototyping"
+        }
     ],
-
-    // 🔴 PLACEHOLDER — grouped tech stack
-    techStack: [
-      { label: "Frontend",   items: ["TypeScript", "React", "Next.js", "Vue", "Tailwind CSS", "React Native"] },
-      { label: "Backend",    items: ["Node.js", "Python", "Go", "FastAPI", "NestJS", "PostgreSQL", "Redis"] },
-      { label: "AI / ML",    items: ["PyTorch", "Hugging Face", "LangChain", "pgvector", "OpenAI & Anthropic APIs", "ONNX"] },
-      { label: "Platform",   items: ["AWS", "Google Cloud", "Docker", "Kubernetes", "Terraform", "GitHub Actions"] }
+    "techStack": [
+        {
+            "label": "Frontend & Product",
+            "icon": "web",
+            "description": "Interfaces, mobile experiences, and prototypes shaped around the people using them.",
+            "items": [
+                "React",
+                "Next.js",
+                "TypeScript",
+                "JavaScript",
+                "Tailwind CSS",
+                "Vite",
+                "React Native",
+                "Figma",
+                "Leaflet"
+            ]
+        },
+        {
+            "label": "Backend & Data",
+            "icon": "pipeline",
+            "description": "Application logic, real-time connections, and the data systems behind the product.",
+            "items": [
+                "Node.js",
+                "Express",
+                "Spring Boot",
+                "Django",
+                "Laravel",
+                "Socket.io",
+                "MongoDB",
+                "PostgreSQL",
+                "MySQL",
+                "Firebase",
+                "SQLite"
+            ]
+        },
+        {
+            "label": "AI & Engineering",
+            "icon": "ai",
+            "description": "Intelligent features, predictive models, and the engineering that puts them to work.",
+            "items": [
+                "Python",
+                "TensorFlow",
+                "scikit-learn",
+                "Google Gemini",
+                "pandas",
+                "C++"
+            ]
+        },
+        {
+            "label": "Infrastructure & Delivery",
+            "icon": "cloud",
+            "description": "Containers, messaging, and observability to deploy and operate what we build.",
+            "items": [
+                "Docker",
+                "Kubernetes",
+                "RabbitMQ",
+                "Prometheus",
+                "Grafana",
+                "Git"
+            ]
+        }
     ],
-
-    // 🔴 PLACEHOLDER — same card component, named + anonymised mix
-    featuredWork: [
-      {
-        client: { name: "Meridian Logistics", sector: "Supply chain" },
-        title: "Freight visibility platform",
-        summary: "A ground-up replacement for a spreadsheet-driven operation: live shipment tracking, exception alerting and a carrier portal, rolled out across three regions without downtime.",
-        tags: ["React", "Node.js", "PostgreSQL", "AWS"],
-        metrics: [
-          { value: "8 mo",  label: "Discovery to launch" },
-          { value: "3",     label: "Regions live" },
-          { value: "-62%",  label: "Manual coordination" }
-        ]
-      },
-      {
-        client: { descriptor: "Series B healthtech company", sector: "Healthcare" },
-        title: "Clinical document intelligence",
-        summary: "A retrieval and summarisation layer over a decade of clinical documentation, with a human-in-the-loop review queue and full audit trail for regulatory sign-off.",
-        tags: ["Python", "RAG", "pgvector", "HIPAA-aligned"],
-        metrics: [
-          { value: "1.4M", label: "Documents indexed" },
-          { value: "< 2s", label: "Median query time" },
-          { value: "94%",  label: "Reviewer agreement" }
-        ]
-      },
-      {
-        client: { name: "Kestrel Field Services", sector: "Field operations" },
-        title: "Offline-first mobile workforce app",
-        summary: "A field inspection app for technicians working without reliable connectivity — local-first data, conflict-safe sync and photo evidence capture with automatic upload on reconnect.",
-        tags: ["React Native", "Offline-first", "Sync engine"],
-        metrics: [
-          { value: "2,100+", label: "Daily active users" },
-          { value: "4.7★",   label: "Store rating" },
-          { value: "99.95%", label: "Sync success" }
-        ]
-      },
-      {
-        client: { descriptor: "Internal — Orbitech", sector: "Own platform" },
-        title: "Workforce operations platform",
-        summary: "The system that runs our own delivery: skill-matched job routing, submission-level acceptance tracking and at-risk flagging across a thousand-person contributor network.",
-        tags: ["Internal tooling", "Automation", "Dogfooded"],
-        metrics: [
-          { value: "1,000+", label: "Contributors managed" },
-          { value: "0",      label: "Missed client deadlines" },
-          { value: "Daily",  label: "In production use" }
-        ]
-      }
-    ]
-  },
+    "featuredWork": [
+        {
+                "client": {
+                        "sector": "AI & Intelligent Products"
+                },
+                "title": "MoneyBag",
+                "summary": "AI personal finance app parsing transactions and receipts via Gemini vision/text.",
+                "tags": [
+                        "React",
+                        "Node.js",
+                        "MongoDB",
+                        "Google Gemini"
+                ]
+        },
+        {
+                "client": {
+                        "sector": "AI & Intelligent Products"
+                },
+                "title": "DesiTrip",
+                "summary": "Offline-first travel and expense tracker with bilingual AI itinerary generation.",
+                "tags": [
+                        "Next.js",
+                        "Node.js",
+                        "Google Gemini"
+                ]
+        },
+        {
+                "client": {
+                        "sector": "Platforms & Infrastructure"
+                },
+                "title": "EVENT-EKHANE",
+                "summary": "Multi-role event platform with real-time ticketing and QR check-in.",
+                "tags": [
+                        "Next.js",
+                        "TypeScript",
+                        "MySQL"
+                ]
+        },
+        {
+                "client": {
+                        "sector": "Safety, Civic & Social Impact"
+                },
+                "title": "Aid-Link",
+                "summary": "Real-time emergency volunteer coordination with automated matching.",
+                "tags": [
+                        "React",
+                        "Node.js",
+                        "Express"
+                ]
+        }
+]
+},
 
 
   /* ======================================================================
-     🔴 6. WHY ORBITECH — the combined-capability differentiator
+     6. WHY ORBITECH — supplied company content
      ====================================================================== */
+  // Company content supplied in Untitled document.pdf.
   why: {
-    compare: {
-      them: {
-        label: "The usual arrangement",
-        items: [                                            // 🔴 PLACEHOLDER
-          "A data vendor labels your training set to a spec they didn't help write.",
-          "A separate dev shop builds the product, with no visibility into how the data was produced.",
-          "You become the integration layer — translating between two suppliers who never speak.",
-          "When quality dips, each side points at the other and nobody owns the fix."
-        ]
-      },
-      us: {
-        label: "With Orbitech",
-        items: [                                            // 🔴 PLACEHOLDER
-          "One team scopes the annotation schema and the system that will consume it, together.",
-          "Pipeline, labelling guidelines and model evaluation are designed against each other from day one.",
-          "A single point of accountability for both the data and the product built on it.",
-          "Feedback from production flows straight back into the labelling spec — no vendor round-trip."
-        ]
-      }
-    },
-
-    // 🔴 PLACEHOLDER
-    points: [
-      {
-        title: "Built for AI/ML teams specifically",
-        desc: "The gap between a labelled dataset and a working product is where most AI projects stall. We work on both sides of it, so nothing is thrown over a wall."
-      },
-      {
-        title: "Network scale with in-house control",
-        desc: "A 500-strong specialist network gives us reach into languages most agencies can't staff. A salaried engineering team gives us the consistency a network alone can't."
-      },
-      {
-        title: "Quality measured, not asserted",
-        desc: "Acceptance rate, inter-annotator agreement and reviewer throughput are tracked per contributor and reported to you — the same numbers we run the business on."
-      },
-      {
-        title: "We use what we build",
-        desc: "Our own delivery runs on software our engineers wrote. When we recommend a tooling approach, it's because we operate it daily, not because it demos well."
-      }
+    "compare": null,
+    "points": [
+        {
+            "title": "Scalable Delivery",
+            "desc": "From highly specialized datasets to large scale AI initiatives, Orbitech combines skilled people, structured processes, and thoughtful quality control to deliver data you can rely on."
+        },
+        {
+            "title": "Reliable Quality",
+            "desc": "Quality is not something we check only at the end. It is part of the process from start to finish. Our review and validation workflows help detect inconsistencies, reduce errors, and maintain the reliability your AI project depends on."
+        },
+        {
+            "title": "Human Expertise",
+            "desc": "At Orbitech, we believe the strongest AI systems begin with people who understand the value of every piece of data. Behind every accurate label, every carefully transcribed word, and every validated dataset is human attention, judgment, and expertise."
+        },
+        {
+            "title": "Built Around Your Goals",
+            "desc": "Every project has a different purpose, and every dataset has different requirements. We take the time to understand yours and build a workflow around your goals, timeline, and quality expectations."
+        }
     ]
-  },
+},
 
 
   /* ======================================================================

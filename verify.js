@@ -15,6 +15,57 @@ const VIEWPORTS = [
   { name: 'wide',    width: 1920, height: 1080 },
 ];
 
+const zlib = require('zlib');
+
+/** Decode a PNG buffer to {width,height,data:RGBA} without a native dep. */
+async function sharpless(buf) {
+  let pos = 8, w = 0, h = 0, bitDepth = 8, colorType = 6;
+  const idat = [];
+  while (pos < buf.length) {
+    const len = buf.readUInt32BE(pos);
+    const type = buf.toString('ascii', pos + 4, pos + 8);
+    const data = buf.subarray(pos + 8, pos + 8 + len);
+    if (type === 'IHDR') {
+      w = data.readUInt32BE(0); h = data.readUInt32BE(4);
+      bitDepth = data[8]; colorType = data[9];
+    } else if (type === 'IDAT') idat.push(data);
+    else if (type === 'IEND') break;
+    pos += 12 + len;
+  }
+  if (bitDepth !== 8 || (colorType !== 6 && colorType !== 2)) {
+    throw new Error(`unsupported PNG: depth ${bitDepth} colorType ${colorType}`);
+  }
+  const ch = colorType === 6 ? 4 : 3;
+  const raw = zlib.inflateSync(Buffer.concat(idat));
+  const stride = w * ch;
+  const out = Buffer.alloc(w * h * 4);
+  let prev = Buffer.alloc(stride);
+  for (let y = 0; y < h; y++) {
+    const filter = raw[y * (stride + 1)];
+    const line = Buffer.from(raw.subarray(y * (stride + 1) + 1, (y + 1) * (stride + 1)));
+    for (let i = 0; i < stride; i++) {
+      const a = i >= ch ? line[i - ch] : 0, b = prev[i], c = i >= ch ? prev[i - ch] : 0;
+      let v = line[i];
+      if (filter === 1) v += a;
+      else if (filter === 2) v += b;
+      else if (filter === 3) v += (a + b) >> 1;
+      else if (filter === 4) {
+        const pp = a + b - c, pa = Math.abs(pp - a), pb = Math.abs(pp - b), pc = Math.abs(pp - c);
+        v += (pa <= pb && pa <= pc) ? a : (pb <= pc ? b : c);
+      }
+      line[i] = v & 0xff;
+    }
+    for (let x = 0; x < w; x++) {
+      out[(y * w + x) * 4] = line[x * ch];
+      out[(y * w + x) * 4 + 1] = line[x * ch + 1];
+      out[(y * w + x) * 4 + 2] = line[x * ch + 2];
+      out[(y * w + x) * 4 + 3] = ch === 4 ? line[x * ch + 3] : 255;
+    }
+    prev = line;
+  }
+  return { width: w, height: h, data: out };
+}
+
 const problems = [];
 function check(cond, msg) { if (!cond) problems.push(msg); }
 
@@ -40,8 +91,14 @@ function check(cond, msg) { if (!cond) problems.push(msg); }
     // Skip the intro if it's showing, then let things settle.
     const introVisible = await page.locator('#intro').isVisible().catch(() => false);
     if (introVisible) {
+      // First press winds the sequence down; a second bails out immediately.
       await page.click('#intro-skip');
-      await page.waitForTimeout(800);
+      await page.waitForTimeout(120);
+      await page.click('#intro-skip').catch(() => {});
+      await page.waitForTimeout(1200);
+      // Release the hero entrance so screenshots aren't caught mid-stagger.
+      await page.evaluate(() => document.documentElement.classList.add('hero-in'));
+      await page.waitForTimeout(900);
     }
 
     // Force all reveals so the full-page screenshot isn't blank.
@@ -186,6 +243,104 @@ function check(cond, msg) { if (!cond) problems.push(msg); }
       if (contrast.length) contrast.forEach(c => problems.push('CONTRAST: ' + c));
       else console.log('contrast: all sampled text passes WCAG AA');
 
+      /* --- Contrast over DECORATIVE layers -------------------------------
+         The DOM-walking audit above finds the nearest opaque background-color,
+         which is blind to gradient/canvas layers painted behind text — exactly
+         where the hero's planet limb sits. This pass screenshots the hero with
+         its copy hidden, then measures the real pixels under each text box.
+         -------------------------------------------------------------------- */
+      {
+        await page.evaluate(() => window.scrollTo(0, 0));
+        await page.waitForTimeout(200);
+
+        const boxes = await page.evaluate(() => {
+          const out = [];
+          document.querySelectorAll('.hero__inner *, .hero__scroll').forEach(el => {
+            const direct = [...el.childNodes].some(n => n.nodeType === 3 && n.textContent.trim());
+            if (!direct) return;
+            const r = el.getBoundingClientRect();
+            if (r.width < 2 || r.height < 2) return;
+            const cs = getComputedStyle(el);
+            if (cs.webkitTextFillColor === 'rgba(0, 0, 0, 0)') return; // gradient text
+            // Elements painting their own opaque fill (the primary button) sit
+            // on that fill, not on the backdrop — the DOM audit already covers
+            // them, and hiding the layer would measure the wrong thing.
+            const own = cs.backgroundColor.match(/rgba?\(([^)]+)\)/);
+            if (own) {
+              const parts = own[1].split(',').map(parseFloat);
+              if (parts.length < 4 || parts[3] > 0.85) return;
+            }
+            out.push({
+              label: el.className || el.tagName,
+              text: el.textContent.trim().slice(0, 28),
+              color: cs.color,
+              size: parseFloat(cs.fontSize),
+              bold: parseInt(cs.fontWeight, 10) >= 700,
+              shadow: cs.textShadow !== 'none',
+              x: Math.round(r.left), y: Math.round(r.top),
+              w: Math.round(r.width), h: Math.round(r.height)
+            });
+          });
+          return out;
+        });
+
+        // Backdrop only: hide the copy, keep every decorative layer.
+        await page.evaluate(() => {
+          document.querySelectorAll('.hero__inner, .hero__scroll')
+            .forEach(e => { e.style.visibility = 'hidden'; });
+        });
+        await page.waitForTimeout(120);
+        const shot = await page.screenshot({ clip: { x: 0, y: 0, width: 1440, height: 900 } });
+        await page.evaluate(() => {
+          document.querySelectorAll('.hero__inner, .hero__scroll')
+            .forEach(e => { e.style.visibility = ''; });
+        });
+
+        const png = await sharpless(shot);   // {width,height,data:RGBA}
+
+        function lum(r, g, b) {
+          const f = v => { v /= 255; return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4); };
+          return 0.2126 * f(r) + 0.7152 * f(g) + 0.0722 * f(b);
+        }
+        function parseRGB(str) {
+          const m = str.match(/rgba?\(([^)]+)\)/);
+          return m ? m[1].split(',').map(parseFloat) : [255, 255, 255];
+        }
+
+        /* Worst case is the brightest REGION under the text, not the
+           brightest pixel: a 1px star behind a glyph is not a background.
+           Averaging over roughly one stroke-width of pixels is what the eye
+           actually integrates. */
+        const BLOCK = 5;
+        boxes.forEach(bx => {
+          let best = 0;
+          for (let y = bx.y; y + BLOCK <= Math.min(bx.y + bx.h, png.height); y += BLOCK) {
+            for (let x = bx.x; x + BLOCK <= Math.min(bx.x + bx.w, png.width); x += BLOCK) {
+              let r = 0, g = 0, b = 0;
+              for (let dy = 0; dy < BLOCK; dy++) {
+                for (let dx = 0; dx < BLOCK; dx++) {
+                  const i = ((y + dy) * png.width + (x + dx)) * 4;
+                  r += png.data[i]; g += png.data[i + 1]; b += png.data[i + 2];
+                }
+              }
+              const n = BLOCK * BLOCK;
+              best = Math.max(best, lum(r / n, g / n, b / n));
+            }
+          }
+          const fg = parseRGB(bx.color);
+          const l1 = lum(fg[0], fg[1], fg[2]);
+          const ratio = (Math.max(l1, best) + 0.05) / (Math.min(l1, best) + 0.05);
+          const large = bx.size >= 24 || (bx.size >= 18.66 && bx.bold);
+          const need = large ? 3 : 4.5;
+          if (ratio < need) {
+            problems.push(`HERO CONTRAST: ${bx.label} "${bx.text}" ${ratio.toFixed(2)}:1 ` +
+              `(need ${need}) against the brightest pixel behind it` +
+              (bx.shadow ? ' — text-shadow present but not counted' : ''));
+          }
+        });
+        console.log(`hero decorative-layer contrast: ${boxes.length} text boxes measured against real pixels`);
+      }
+
       // --- heading order ---
       const headings = await page.evaluate(() =>
         [...document.querySelectorAll('h1,h2,h3,h4')].map(h => +h.tagName[1]));
@@ -198,13 +353,13 @@ function check(cond, msg) { if (!cond) problems.push(msg); }
         document.documentElement.scrollWidth - document.documentElement.clientWidth);
       check(overflow <= 1, `horizontal overflow of ${overflow}px`);
 
-      // --- header reveal on scroll ---
-      const beforeScroll = await page.locator('#site-header').evaluate(e => e.classList.contains('is-visible'));
-      check(!beforeScroll, 'header should be hidden at top of page');
-      await page.evaluate(() => window.scrollTo(0, window.innerHeight * 1.5));
+      // --- navigation appears after the hero ---
+      const beforeScroll = await page.locator('#site-header').evaluate(e => getComputedStyle(e).opacity);
+      check(beforeScroll === '0', 'header should be hidden during the opening');
+      await page.evaluate(() => window.scrollTo(0, document.getElementById('hero').offsetHeight + 2));
       await page.waitForTimeout(500);
       const afterScroll = await page.locator('#site-header').evaluate(e => e.classList.contains('is-visible'));
-      check(afterScroll, 'header should be visible after scrolling past hero');
+      check(afterScroll, 'header should appear after scrolling to the next section');
 
       // --- scroll spy ---
       await page.evaluate(() => {
@@ -287,6 +442,13 @@ function check(cond, msg) { if (!cond) problems.push(msg); }
         return el ? !el.hasAttribute('hidden') : false;
       });
       check(!introShown, 'intro must NOT play on mobile — static poster expected');
+      const mHero = await page.evaluate(() => ({
+        pending: document.documentElement.classList.contains('intro-pending'),
+        hidden: [...document.querySelectorAll('.hero__inner > *')]
+          .filter(e => parseFloat(getComputedStyle(e).opacity) < 0.99).length
+      }));
+      check(!mHero.pending, 'mobile: intro-pending must never be set');
+      check(mHero.hidden === 0, 'mobile: hero copy must be visible from first paint');
 
       await page.evaluate(() => window.scrollTo(0, window.innerHeight * 1.5));
       await page.waitForTimeout(500);
@@ -340,6 +502,16 @@ function check(cond, msg) { if (!cond) problems.push(msg); }
     check(state.unrevealed === 0, `reduced-motion: all content must be revealed, ${state.unrevealed} hidden`);
     check(!state.bodyLocked, 'reduced-motion: body scroll must not be locked');
     check(state.heroVisible, 'reduced-motion: hero must render');
+    const rmHero = await page.evaluate(() => {
+      const items = [...document.querySelectorAll('.hero__inner > *')];
+      return {
+        pending: document.documentElement.classList.contains('intro-pending'),
+        hidden: items.filter(e => parseFloat(getComputedStyle(e).opacity) < 0.99).length
+      };
+    });
+    check(!rmHero.pending, 'reduced-motion: intro-pending must never be set');
+    check(rmHero.hidden === 0,
+      `reduced-motion: hero copy must be visible immediately, ${rmHero.hidden} hidden`);
     check(errs.length === 0, 'reduced-motion page errors: ' + errs.join(' | '));
     await page.screenshot({ path: path.join(OUT, 'reduced-motion.png'), fullPage: false });
     await ctx.close();
@@ -357,15 +529,35 @@ function check(cond, msg) { if (!cond) problems.push(msg); }
     check(await page.locator('#intro-skip').isVisible(), 'skip control must be visible');
 
     // grab intro frames for visual review
-    for (const t of [500, 2200, 3600, 5000, 6200]) {
-      await page.waitForTimeout(t === 500 ? 500 : 0);
+    let capturedAt = 300;
+    for (const t of [400, 1100, 1800, 2600, 3150]) {
+      await page.waitForTimeout(Math.max(0, t - capturedAt));
       await page.screenshot({ path: path.join(OUT, `intro-${t}.png`) });
-      if (t !== 6200) await page.waitForTimeout(t === 500 ? 1700 : 1400);
+      capturedAt = t;
     }
 
     await page.waitForTimeout(2500);
     const gone = await page.evaluate(() => !document.getElementById('intro'));
     check(gone, 'intro should remove itself after finishing');
+
+    // --- handoff: hero copy must be held back, then released ---
+    const handoff = await page.evaluate(() => {
+      const root = document.documentElement;
+      const items = [...document.querySelectorAll('.hero__inner > *'),
+                     document.querySelector('.hero__scroll')].filter(Boolean);
+      return {
+        pending: root.classList.contains('intro-pending'),
+        heroIn: root.classList.contains('hero-in'),
+        allShown: items.every(e => parseFloat(getComputedStyle(e).opacity) > 0.99),
+        scrollCentred: /matrix\(1, 0, 0, 1, -\d/.test(
+          getComputedStyle(document.querySelector('.hero__scroll')).transform)
+      };
+    });
+    check(handoff.pending, 'intro-pending should have been set on the first visit');
+    check(handoff.heroIn, 'hero-in should be set once the intro finishes');
+    check(handoff.allShown, 'every hero element must be fully visible after the handoff');
+    check(handoff.scrollCentred,
+      'scroll cue must keep its translateX(-50%) through the entrance animation');
     const unlocked = await page.evaluate(() => !document.body.classList.contains('is-intro-locked'));
     check(unlocked, 'body scroll must unlock after intro');
 
@@ -378,6 +570,83 @@ function check(cond, msg) { if (!cond) problems.push(msg); }
     });
     check(!replayed, 'intro must NOT replay within the same session');
     await ctx.close();
+  }
+
+  /* --- Intro→hero handoff: the two frames must actually match ------------
+     The whole cross-dissolve depends on the canvas's last frame and the static
+     CSS hero being the same picture. That is a coupling across two files, so
+     it needs a regression test — otherwise a later tweak to either one
+     silently reintroduces the snap this was built to remove.
+     ----------------------------------------------------------------------- */
+  {
+    const VP = { width: 1440, height: 900 };
+
+    // A: the canvas's final frame, before the overlay starts fading.
+    const ctxA = await browser.newContext({ viewport: VP });
+    const pageA = await ctxA.newPage();
+    await pageA.goto(FILE, { waitUntil: 'domcontentloaded' });
+    await pageA.waitForTimeout(3150);
+    await pageA.evaluate(() => {
+      document.querySelector(".intro__identity").style.visibility = "hidden";
+    });
+    const stillPlaying = await pageA.evaluate(() => {
+      const el = document.getElementById('intro');
+      return !!el && !el.classList.contains('is-dismissed');
+    });
+    check(stillPlaying, 'handoff probe: intro should still be on screen at 3.15s');
+    const shotA = await pageA.screenshot({ clip: { x: 0, y: 0, ...VP } });
+    await ctxA.close();
+
+    // B: the static hero alone, copy hidden so only the backdrop is compared.
+    const ctxB = await browser.newContext({ viewport: VP, reducedMotion: 'reduce' });
+    const pageB = await ctxB.newPage();
+    await pageB.goto(FILE, { waitUntil: 'networkidle' });
+    await pageB.waitForTimeout(500);
+    await pageB.evaluate(() => {
+      document.querySelectorAll('.hero__inner, .hero__scroll')
+        .forEach(e => { e.style.visibility = 'hidden'; });
+    });
+    const shotB = await pageB.screenshot({ clip: { x: 0, y: 0, ...VP } });
+    await ctxB.close();
+
+    const A = await sharpless(shotA), B = await sharpless(shotB);
+
+    /* Two regions belong only to the overlay and are expected to differ:
+       the skip button (right side, so compare x < 1200) and the 2px progress
+       bar pinned to the bottom edge (so stop 4px short). Both fade out with
+       the overlay and never appear over the hero. */
+    let sum = 0, n = 0, worstRow = { y: 0, d: 0 };
+    for (let y = 0; y < VP.height - 4; y++) {
+      let rowSum = 0, rowN = 0;
+      for (let x = 0; x < 1200; x++) {
+        const i = (y * A.width + x) * 4;
+        const d = Math.abs(A.data[i] - B.data[i]) +
+                  Math.abs(A.data[i + 1] - B.data[i + 1]) +
+                  Math.abs(A.data[i + 2] - B.data[i + 2]);
+        rowSum += d / 3; rowN++;
+      }
+      sum += rowSum; n += rowN;
+      const rowMean = rowSum / rowN;
+      if (rowMean > worstRow.d) worstRow = { y: y, d: rowMean };
+    }
+    const mean = sum / n;
+
+    // The old hard planet rim is gone. Require the same diffuse haze layer
+    // in both scenes, and retain the frame-difference guards below.
+    check(!fs.readFileSync(path.join(__dirname, 'index.html'), 'utf8').includes('hero__planet'),
+      'the hard sphere must not reappear');
+    const nebulaLayers = fs.readFileSync(path.join(__dirname, 'index.html'), 'utf8')
+      .match(/class="space-nebula"/g) || [];
+    check(nebulaLayers.length === 2, 'intro and hero must share the same nebula layer');
+    console.log(`intro→hero nebula match: mean Δ ${mean.toFixed(2)}/255`);
+
+    check(mean < 5,
+      `intro's last frame and the static hero have drifted apart — mean Δ ` +
+      `${mean.toFixed(2)}/255 (budget 5). Check the nebula positions and alphas ` +
+      `in intro.js seedNebulae() against .hero__backdrop, and the shared ` +
+      `cloud layer .space-nebula.`);
+    check(worstRow.d < 45,
+      `one scanline differs badly (y=${worstRow.y}, Δ ${worstRow.d.toFixed(1)}).`);
   }
 
   // --- no-JS path ---
@@ -393,6 +662,8 @@ function check(cond, msg) { if (!cond) problems.push(msg); }
     check(introHidden, 'no-JS: intro must stay hidden');
     const revealOpacity = await page.locator('.hero__sub').evaluate(e => getComputedStyle(e).opacity);
     check(revealOpacity === '1', 'no-JS: content must not be stuck at opacity 0');
+    const nojsTitle = await page.locator('#hero-title').evaluate(e => getComputedStyle(e).opacity);
+    check(nojsTitle === '1', 'no-JS: hero title must not be held back by the entrance');
     await page.screenshot({ path: path.join(OUT, 'no-js.png'), fullPage: false });
     await ctx.close();
   }

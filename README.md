@@ -55,12 +55,22 @@ collections — stats, service cards, case studies, team, languages — render f
 `content.config.js`, so adding a fifth case study never touches markup.
 
 **The opening sequence.** Canvas 2D, hand-written, no library: parallax
-starfield → warp → planet limb rising → settles into the hero. It refuses to
+starfield → orbital traces around the supplied logo → soft nebula emerging →
+logo moves into its exact position in the hero. The sequence lasts 3.3 seconds plus a 650ms dissolve (under four seconds total). It refuses to
 play when `prefers-reduced-motion` is set, on small or touch-primary devices, on
 Save-Data or slow connections, on low-core-and-low-memory hardware, or if it has
 already run this browser session. Every one of those paths lands on the hero's
 static poster, which is pure CSS and always underneath. Skip control is the
-first focusable element and Escape works too.
+first focusable element and Escape works too — either exits the sequence immediately with a short cross-fade.
+
+**The handoff.** The sequence doesn't cut to the page, it resolves into it.
+The intro and hero share the same CSS `.space-nebula` layer, so the diffuse
+cyan and violet haze stays in place during the cross-fade. The hero copy stays
+in its resting layout and fades in during the dissolve. Scrollbar space stays
+reserved, and the intro logo tracks the live hero geometry. `verify.js`
+compares the background frames; `node scripts/check-intro-handoff.cjs` checks
+logo alignment and scroll-unlock ordering. The base nebula positions and alphas
+in `seedNebulae()` and `.hero__backdrop` should still be kept in step.
 
 **Accessibility.** Semantic landmarks, one `h1`, no heading-level skips, a skip
 link, visible focus throughout, labelled form controls with `aria-invalid` and
@@ -69,14 +79,13 @@ reduced-motion, high-contrast and print stylesheets. Every sampled text/
 background pair passes WCAG AA — verified against rendered pixels, not
 estimated.
 
-**Performance.** ~44 KB gzipped in total (170 KB raw — most of that is
-comments, which compress away), zero runtime dependencies, and no image
-requests at all: the space scene is CSS gradients and a canvas. Google Fonts
-is the only third-party request; it's preconnected and `display=swap`, so text
-paints immediately in the fallback stack. If you'd rather have no third-party
-request at all, download Inter and Space Grotesk, drop the woff2 files in
-`assets/fonts/`, and swap the `<link>` in `index.html` for local `@font-face`
-rules.
+**Performance.** No runtime dependencies. The space scene uses CSS gradients
+and a canvas; the supplied logo and language flags are local assets. Inter and
+Space Grotesk are self-hosted, preloaded variable WOFF2 fonts (~69 KB combined).
+`font-display: block` briefly waits for the preloaded original brand fonts,
+rather than permanently keeping a fallback font on a cold load.
+The Latin subsets cover the site's English copy and language names. Font
+licenses are included in `assets/fonts/`. No Google Fonts request is needed.
 
 ## Verifying changes
 
@@ -87,10 +96,11 @@ node verify.js
 
 Renders the page at 390 / 834 / 1440 / 1920, plus reduced-motion, no-JS and
 first-visit-vs-return passes. Checks console errors, every rendered collection,
-heading order, horizontal overflow, WCAG AA contrast on real pixels, header
-reveal, scroll-spy, anchor offsets, both forms' validation and success paths,
-mobile menu keyboard behaviour, and touch target sizes. Screenshots land in
-`.verify/`.
+heading order, horizontal overflow, WCAG AA contrast on real pixels (including
+text over the hero's gradient layers, which a DOM-based check can't see), the
+intro→hero frame match, header reveal, scroll-spy, anchor offsets, both forms'
+validation and success paths, mobile menu keyboard behaviour, and touch target
+sizes. Screenshots land in `.verify/`.
 
 Not needed to run or deploy the site — delete `verify.js`, `package.json` and
 `node_modules/` if you don't want them.

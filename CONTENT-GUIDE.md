@@ -262,7 +262,14 @@ literals in `intro.js` (search for `rgba(79,216,232` for cyan and
 
 If you change the accent to something lighter, re-check contrast: cyan on the
 dark background currently passes WCAG AA comfortably, but a pale accent on
-`--c-deep` may not.
+`--c-deep` may not. `node verify.js` measures this against rendered pixels,
+including text sitting over the hero's gradient layers.
+
+⚠️ The hero backdrop is not purely decorative — it is built to match the final
+frame of the intro animation so the two can cross-dissolve. If you restyle
+`.hero__planet` or `.hero__backdrop`, mirror the change in `intro.js`
+(`PLANET`, and `seedNebulae`). Both files carry comments marking the coupling,
+and `verify.js` will fail if they drift apart.
 
 ---
 

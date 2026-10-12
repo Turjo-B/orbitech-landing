@@ -148,7 +148,7 @@
   function projectCard(p, i) {
     var c = p.client || {};
     var isAnon = !c.name && !!c.descriptor;
-    var clientLabel = c.name || c.descriptor || "Client";
+    var clientLabel = c.name || c.descriptor || "Orbitech project";
 
     var metrics = (p.metrics || []).map(function (m) {
       return '<div class="project-card__metric">' +
@@ -194,14 +194,18 @@
     }, 0);
 
     var aside =
-      '<p class="lede" style="font-size:var(--t-base)">' + esc(d.languageNote) + '</p>' +
-      '<p class="text-dim" style="font-size:var(--t-xs)">' +
+      '<p class="lede lang-panel__intro">' + esc(d.languageNote) + '</p>' +
+      '<p class="lang-panel__coverage">' +
         esc(total) + ' shown here · full coverage on request</p>';
     fill("lang-aside", aside);
 
     fill("lang-groups", d.languageGroups.map(function (g, gi) {
       var chips = g.languages.map(function (l) {
-        return '<li><span class="tag">' + esc(l) + '</span></li>';
+        var flag = (d.languageFlags || {})[l];
+        return '<li><span class="tag">' +
+          (flag ? '<img class="language-flag" src="' + esc(flag) +
+            '" alt="" aria-hidden="true" width="30" height="18">' : '') +
+          esc(l) + '</span></li>';
       }).join("");
       return '<div class="lang-group" data-reveal style="--reveal-delay:' + (gi * 70) + 'ms">' +
                '<span class="lang-group__label">' + esc(g.label) + '</span>' +
@@ -211,15 +215,49 @@
   }
 
   function renderTechStack() {
+    var groups = CFG.software.techStack;
+    var tools = [];
+    groups.forEach(function (g) {
+      g.items.forEach(function (t) { if (tools.indexOf(t) < 0) tools.push(t); });
+    });
+    var count = document.getElementById("stack-count");
+    if (count) count.textContent = tools.length;
+    fill("stack-filters", '<button type="button" class="toolkit__filter" data-stack="all" aria-pressed="true">All technologies</button>' +
+      groups.map(function (g, i) {
+        return '<button type="button" class="toolkit__filter" data-stack="' + i + '" aria-pressed="false">' + esc(g.label) + '</button>';
+      }).join(""));
     fill("tech-stack", CFG.software.techStack.map(function (g, i) {
       var items = g.items.map(function (t) {
-        return '<li class="stack-group__item">' + esc(t) + '</li>';
+        return '<li class="stack-group__item"><span class="stack-group__dot" aria-hidden="true"></span>' + esc(t) + '</li>';
       }).join("");
-      return '<div class="stack-group" data-reveal style="--reveal-delay:' + (i * 70) + 'ms">' +
-               '<span class="stack-group__label">' + esc(g.label) + '</span>' +
+      return '<article class="stack-group" data-stack-group="' + i + '" data-reveal style="--reveal-delay:' + (i * 70) + 'ms">' +
+               '<div class="stack-group__top"><span class="stack-group__icon">' + icon(g.icon) + '</span>' +
+               '<span class="stack-group__index" aria-hidden="true">0' + (i + 1) + ' / 04</span></div>' +
+               '<div class="stack-group__heading"><h4 class="stack-group__label">' + esc(g.label) + '</h4>' +
+               '<span class="stack-group__count">' + g.items.length + ' tools</span></div>' +
+               '<p class="stack-group__description">' + esc(g.description) + '</p>' +
                '<ul class="stack-group__list" role="list">' + items + '</ul>' +
-             '</div>';
+             '</article>';
     }).join(""));
+  }
+
+  function initTechStack() {
+    var filters = document.getElementById("stack-filters");
+    var grid = document.getElementById("tech-stack");
+    if (!filters || !grid) return;
+    filters.addEventListener("click", function (event) {
+      var button = event.target.closest("button[data-stack]");
+      if (!button || !filters.contains(button)) return;
+      var selected = button.getAttribute("data-stack");
+      filters.querySelectorAll("button").forEach(function (b) {
+        b.setAttribute("aria-pressed", b === button ? "true" : "false");
+      });
+      grid.classList.toggle("is-filtered", selected !== "all");
+      grid.querySelectorAll("[data-stack-group]").forEach(function (card) {
+        card.hidden = selected !== "all" && card.getAttribute("data-stack-group") !== selected;
+        if (!card.hidden) card.classList.add("is-revealed");
+      });
+    });
   }
 
   function renderWhy() {
@@ -238,11 +276,13 @@
              '</div>';
     }
 
-    fill("why-compare",
-      col(w.compare.them, "them") +
-      '<div class="compare__divider" aria-hidden="true">vs</div>' +
-      col(w.compare.us, "us")
-    );
+    if (w.compare) {
+      fill("why-compare",
+        col(w.compare.them, "them") +
+        '<div class="compare__divider" aria-hidden="true">vs</div>' +
+        col(w.compare.us, "us")
+      );
+    }
 
     fill("why-points", w.points.map(function (p, i) {
       return '<article class="card why-card" data-reveal style="--reveal-delay:' + (i * 70) + 'ms">' +
@@ -418,19 +458,16 @@
     var hero = document.getElementById("hero");
     if (!header || !hero) return;
 
-    /* --- Fade/slide the header in once the hero is mostly scrolled past --- */
-    if ("IntersectionObserver" in window) {
-      new IntersectionObserver(function (entries) {
-        entries.forEach(function (e) {
-          header.classList.toggle("is-visible", !e.isIntersecting);
-          if (e.isIntersecting) closeMobileMenu();
-        });
-      }, { rootMargin: "-72% 0px 0px 0px", threshold: 0 }).observe(hero);
-    } else {
-      window.addEventListener("scroll", function () {
-        header.classList.toggle("is-visible", window.scrollY > window.innerHeight * 0.7);
-      }, { passive: true });
+    /* Reveal only after the hero has scrolled out of view. Measure its live
+       geometry so this also works after resizing or loading at a deep link. */
+    function updateHeaderSurface() {
+      var visible = hero.getBoundingClientRect().bottom <= 1;
+      header.classList.toggle("is-visible", visible);
+      header.classList.toggle("is-scrolled", visible);
+      if (!visible) closeMobileMenu();
     }
+    window.addEventListener("scroll", updateHeaderSurface, { passive: true });
+    window.addEventListener("resize", updateHeaderSurface, { passive: true });
 
     /* --- Mobile menu ------------------------------------------------------ */
     var toggle = document.getElementById("menu-toggle");
@@ -439,11 +476,13 @@
     function openMobileMenu() {
       menu.classList.add("is-open");
       toggle.setAttribute("aria-expanded", "true");
+      toggle.setAttribute("aria-label", "Close menu");
     }
     function closeMobileMenu() {
-      if (!menu) return;
+      if (!menu || !toggle) return;
       menu.classList.remove("is-open");
       toggle.setAttribute("aria-expanded", "false");
+      toggle.setAttribute("aria-label", "Open menu");
     }
 
     if (toggle && menu) {
@@ -471,6 +510,7 @@
       else if (mq.addListener) mq.addListener(onChange);
     }
 
+    updateHeaderSurface();
     initScrollSpy();
   }
 
@@ -916,6 +956,7 @@
     render();
     initHeader();
     initReveal();
+    initTechStack();
     initApplicationForm();
     initContactForm();
 
