@@ -340,22 +340,21 @@
     if (updated) updated.textContent = "Updated " + j.inDemand.lastUpdated;
 
     // "How did you hear about us?" options
-    var sel = document.getElementById("app-referral");
-    if (sel) {
+    document.querySelectorAll('#application-form select[name="referral"], #software-application-form select[name="referral"]').forEach(function (sel) {
       sel.insertAdjacentHTML("beforeend", j.referralSources.map(function (s) {
         return '<option value="' + esc(s) + '">' + esc(s) + '</option>';
       }).join(""));
-    }
+    });
 
     // Upload constraints come from config so the hint can never drift
     // out of sync with the validation rule.
-    var fileInput = document.getElementById("app-cv-file");
-    if (fileInput) fileInput.setAttribute("accept", CFG.integrations.acceptedUploadTypes);
-    var hint = document.getElementById("app-cv-file-hint");
-    if (hint) {
+    document.querySelectorAll('#application-form input[name="cvFile"], #software-application-form input[name="cvFile"]').forEach(function (fileInput) {
+      fileInput.setAttribute("accept", CFG.integrations.acceptedUploadTypes);
+    });
+    document.querySelectorAll('#app-cv-file-hint, #software-app-cv-file-hint').forEach(function (hint) {
       hint.textContent = "PDF, DOC, DOCX, RTF, ODT or TXT · up to " +
                          CFG.integrations.maxUploadMB + " MB";
-    }
+    });
   }
 
   function renderTrust() {
@@ -694,8 +693,11 @@
     }).then(function (res) {
       if (!res.ok) throw new Error("Server responded " + res.status);
       return res.text().then(function (text) {
-        try { return JSON.parse(text); }
-        catch (e) { return { ok: true, raw: text }; }
+        var result;
+        try { result = JSON.parse(text); }
+        catch (e) { throw new Error("Server returned an invalid response."); }
+        if (!result || result.ok !== true) throw new Error("Server rejected the submission.");
+        return result;
       });
     });
   }
@@ -708,13 +710,22 @@
   /* --- Join Our Team application form ------------------------------------- */
 
   function initApplicationForm() {
-    var form = document.getElementById("application-form");
-    if (!form) return;
+    var teamChoices = document.querySelectorAll('input[name="application-team"]');
+    var dataPanel = document.getElementById("data-application-panel");
+    var softwarePanel = document.getElementById("software-application-panel");
+    teamChoices.forEach(function (choice) {
+      choice.addEventListener("change", function () {
+        if (!choice.checked || !dataPanel || !softwarePanel) return;
+        dataPanel.hidden = choice.value !== "data";
+        softwarePanel.hidden = choice.value !== "software";
+      });
+    });
+    document.querySelectorAll('#application-form, #software-application-form').forEach(function (form) {
 
-    var status = document.getElementById("application-status");
+    var status = $('.form__status', form);
     var submitBtn = $('button[type="submit"]', form);
-    var fileInput = document.getElementById("app-cv-file");
-    var fileName = document.getElementById("app-cv-file-name");
+    var fileInput = form.elements.cvFile;
+    var fileName = $('.filefield__name', form);
     var maxBytes = CFG.integrations.maxUploadMB * 1024 * 1024;
 
     /* File picker feedback + client-side size check */
@@ -732,7 +743,7 @@
           fileName.textContent = "No file selected";
           fileName.classList.remove("filefield__name--set");
           setFieldError(fileInput,
-            "That file is " + (f.size / 1048576).toFixed(1) + " MB — the limit is " +
+            "That file is " + (f.size / 1048576).toFixed(1) + " MB. The limit is " +
             CFG.integrations.maxUploadMB + " MB. Try a link instead.");
           return;
         }
@@ -748,7 +759,7 @@
 
       // Honeypot: silently succeed for bots so they don't retry.
       if (form.elements.company_website && form.elements.company_website.value) {
-        setStatus(status, "success", "Thanks — your application has been received.");
+        setStatus(status, "success", "Thanks, your application has been received.");
         return;
       }
 
@@ -759,7 +770,7 @@
         { name: "country",   required: true, requiredMsg: "Please tell us where you're based." },
         { name: "skills",    required: true, minLength: 10,
           requiredMsg: "List the services you can work on." },
-        { name: "languages", required: true,
+        { name: "languages", required: form.dataset.team === "Data services",
           requiredMsg: "List the languages you work in." },
         { name: "cvUrl",     type: "url" },
         { name: "referral",  required: true, requiredMsg: "Please pick an option." }
@@ -789,6 +800,7 @@
 
       var payload = {
         formType: "application",
+        team: form.dataset.team,
         submittedAt: new Date().toISOString(),
         fullName: form.elements.fullName.value.trim(),
         email: form.elements.email.value.trim(),
@@ -816,11 +828,11 @@
         .then(function (result) {
           if (result && result.demo) {
             setStatus(status, "success",
-              "Demo mode — your application was validated but not sent. " +
+              "Demo mode: your application was validated but not sent. " +
               "Set GOOGLE_SCRIPT_URL in assets/js/content.config.js to go live.");
           } else {
             setStatus(status, "success",
-              "Thank you — your application is in. We review every submission and " +
+              "Thank you, your application is in. We review every submission and " +
               "will be in touch if there's a project that fits your skills.");
             form.reset();
             if (fileName) {
@@ -836,6 +848,7 @@
             "email us directly at " + CFG.company.talentEmail + ".");
         })
         .finally(function () { submitBtn.disabled = false; });
+    });
     });
   }
 
@@ -853,7 +866,7 @@
       clearErrors(form);
 
       if (form.elements.company_website && form.elements.company_website.value) {
-        setStatus(status, "success", "Thanks — your message has been received.");
+        setStatus(status, "success", "Thanks, your message has been received.");
         return;
       }
 
@@ -892,11 +905,11 @@
         .then(function (result) {
           if (result && result.demo) {
             setStatus(status, "success",
-              "Demo mode — your message was validated but not sent. " +
+              "Demo mode: your message was validated but not sent. " +
               "Set CONTACT_ENDPOINT in assets/js/content.config.js to go live.");
           } else {
             setStatus(status, "success",
-              "Thanks — your message is with us. We reply to project enquiries " +
+              "Thanks, your message is with us. We reply to project enquiries " +
               "within one business day.");
             form.reset();
           }
@@ -918,7 +931,7 @@
    */
   function submitPayload(endpoint, payload) {
     if (!endpoint || endpoint === "REPLACE_ME") {
-      console.info("[Orbitech] DEMO MODE — payload not sent:", payload);
+      console.info("[Orbitech] Demo mode: submission not sent.");
       return new Promise(function (resolve) {
         setTimeout(function () { resolve({ ok: true, demo: true }); }, 900);
       });

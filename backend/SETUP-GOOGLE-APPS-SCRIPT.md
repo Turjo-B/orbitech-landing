@@ -125,8 +125,7 @@ writes to different tabs. If you'd rather send client enquiries somewhere else
 Save, upload the site, and submit a real test through the live form.
 
 > Until you replace these, both forms run in **demo mode**: they validate and
-> show a success message but send nothing, and log the payload to the browser
-> console. That's deliberate, so the site is fully demonstrable before the
+> show a demo message but send nothing. That's deliberate, so the site is fully demonstrable before the
 > backend exists.
 
 ---
@@ -169,9 +168,8 @@ The limit is 8 MB, set in two places that must agree: `MAX_UPLOAD_MB` in
 are told to use the link field instead.
 
 **Nothing at all in Executions when you submit**
-The request isn't reaching Google. Check the URL in the config for typos, and
-confirm the site is served over `https://` — a page on `http://` posting to
-`https://` can be blocked as mixed content.
+The request isn't reaching Google. Check the URL in the config for typos and
+check the browser console for network errors.
 
 ---
 

@@ -58,7 +58,7 @@ var CONFIG = {
    * Where to send notifications. Comma-separate for multiple recipients.
    * Leave "" to use the email address that owns this script.
    */
-  NOTIFY_EMAIL: "",
+  NOTIFY_EMAIL: "mhbt24803@gmail.com",
 
   /** Set false to turn off notification emails but keep sheet logging. */
   SEND_NOTIFICATIONS: true,
@@ -101,7 +101,8 @@ var APPLICATION_COLUMNS = [
   { header: "Heard about us",   key: "referral" },
   { header: "Notes",            key: "notes" },
   { header: "Status",           key: "_status" },
-  { header: "Source page",      key: "pageUrl" }
+  { header: "Source page",      key: "pageUrl" },
+  { header: "Team",             key: "team" }
 ];
 
 var INQUIRY_COLUMNS = [
@@ -179,7 +180,8 @@ function doGet() {
    =========================================================================== */
 
 function handleApplication(payload) {
-  var required = ["fullName", "email", "country", "skills", "languages"];
+  var required = ["fullName", "email", "country", "skills"];
+  if (payload.team !== "Software") required.push("languages");
   var missing = required.filter(function (k) {
     return !payload[k] || !String(payload[k]).trim();
   });
@@ -194,8 +196,7 @@ function handleApplication(payload) {
       fileInfo = saveUpload_(payload.file, payload.fullName);
     } catch (fileErr) {
       logError_("saveUpload_", fileErr, payload.file && payload.file.name);
-      // A failed upload must not lose the application — record it and move on.
-      fileInfo = { url: "UPLOAD FAILED: " + fileErr.message, name: "" };
+      return jsonResponse({ ok: false, error: "Could not save the uploaded file. Please try again or use a link." });
     }
   }
 
@@ -212,7 +213,7 @@ function handleApplication(payload) {
       MailApp.sendEmail({
         to: notifyAddress_(),
         replyTo: String(payload.email),
-        subject: "New Orbitech application — " + payload.fullName +
+        subject: "New Orbitech application: " + payload.fullName +
                  " (" + payload.country + ")",
         htmlBody: buildApplicationEmail_(payload, fileInfo, rowNumber)
       });
@@ -308,6 +309,13 @@ function appendRow_(tabName, columns, data) {
     }
   }
 
+  // Add headers for columns introduced after the sheet was created.
+  var existingColumns = sheet.getLastColumn();
+  if (existingColumns < columns.length) {
+    var newHeaders = columns.slice(existingColumns).map(function (c) { return c.header; });
+    sheet.getRange(1, existingColumns + 1, 1, newHeaders.length).setValues([newHeaders]);
+  }
+
   var values = columns.map(function (c) {
     var v = data[c.key];
     if (v === undefined || v === null) return "";
@@ -336,7 +344,9 @@ function wideColumn_(key) {
  */
 function saveUpload_(file, applicantName) {
   // base64 inflates by ~4/3; check the decoded size against the limit.
-  var approxBytes = Math.ceil(String(file.data).length * 0.75);
+  var encoded = String(file.data);
+  var padding = (encoded.match(/=+$/) || [""])[0].length;
+  var approxBytes = Math.floor(encoded.length * 0.75) - padding;
   var limit = CONFIG.MAX_UPLOAD_MB * 1024 * 1024;
   if (approxBytes > limit) {
     throw new Error("File exceeds the " + CONFIG.MAX_UPLOAD_MB + " MB limit.");
@@ -391,6 +401,7 @@ function notifyAddress_() {
 
 function buildApplicationEmail_(p, fileInfo, rowNumber) {
   var rows = [
+    ["Team", p.team || "Data services"],
     ["Name", p.fullName],
     ["Email", '<a href="mailto:' + escapeHtml_(p.email) + '">' + escapeHtml_(p.email) + "</a>"],
     ["Country", p.country],

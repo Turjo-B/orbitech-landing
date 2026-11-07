@@ -29,9 +29,11 @@ For a local server (needed if you want to test the live form endpoint, since
 `file://` origins are blocked by CORS):
 
 ```bash
-python3 -m http.server 8000
+python -m http.server 8000
 # → http://localhost:8000
 ```
+
+Python 3 must be installed. The website itself needs no npm server or build step.
 
 ## Deploying
 

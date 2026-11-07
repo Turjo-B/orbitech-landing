@@ -531,7 +531,7 @@ const ORBITECH = {
       {
         icon: "globe",
         title: "Work from anywhere",
-        desc: "Our network spans 20+ time zones. Everything is remote and asynchronous by default — no relocation, no fixed hours."
+        desc: "Our network spans 20+ time zones. Everything is remote and asynchronous by default, with no relocation or fixed hours."
       },
       {
         icon: "clock",
@@ -546,7 +546,7 @@ const ORBITECH = {
       {
         icon: "trend",
         title: "Track record that travels",
-        desc: "Your acceptance rate and project history build a visible record with us — and it's what gets you first call on the next brief."
+        desc: "Your acceptance rate and project history build a visible record with us, helping you get first call on the next brief."
       },
       {
         icon: "pay",
@@ -636,7 +636,7 @@ const ORBITECH = {
     ],
 
     // 🔴 PLACEHOLDER — the honest caveat. Keep something like it.
-    note: "Orbitech is building towards formal information-security certification. We are not yet certified, and we won't claim otherwise — what we can do today is meet your security requirements contractually, work inside your environment and controls, and complete your vendor security assessment in full. Ask us for our current data-handling policy and we'll send it before you share anything."
+    note: "Orbitech is building towards formal information-security certification. We are not yet certified, and we won't claim otherwise. What we can do today is meet your security requirements contractually, work inside your environment and controls, and complete your vendor security assessment in full. Ask us for our current data-handling policy and we'll send it before you share anything."
   },
 
 
